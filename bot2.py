@@ -7,6 +7,7 @@ import threading
 import time
 from pysrt import SubRipTime
 from pyrogram import Client, filters
+import unicodedata
 
 with open('config.json') as config_file:
     config = json.load(config_file)
@@ -23,6 +24,11 @@ app = Client(
 )
 
 video_tasks = []
+
+def sanitize_filename(filename):
+    # Convert Unicode characters to ASCII equivalents
+    sanitized = unicodedata.normalize('NFKD', filename).encode('ascii', 'ignore').decode('ascii')
+    return sanitized
 
 def download_file(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
@@ -85,39 +91,41 @@ def add_soft_subtitle_with_watermark(video_file, subtitle_file, watermark_file, 
         output_file
     ])
 
-
 def trim_video(input_file, output_file, duration=15):
     subprocess.run([
         'ffmpeg', '-i', input_file, '-t', str(duration), '-c', 'copy', output_file
     ])
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
-    output_path = output_name + '.mkv'
+    sanitized_output_name = sanitize_filename(output_name)
+    output_path = sanitized_output_name + '.mkv'
     message = client.send_message(chat_id, f"در حال پردازش: {output_path}...")
     message_id = message.id
 
     downloaded = f'downloaded_{output_path}'
     download_file(video_link, downloaded, chat_id, message_id)
-    download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
+    download_file(subtitle_link, sanitized_output_name + '_subtitle.srt', chat_id, message_id)
 
     processing_start_time = time.time()
 
     watermark_file = 'Watermark.png'
-    add_soft_subtitle_with_watermark(downloaded, output_name + '_subtitle.srt', watermark_file, output_path)
+    add_soft_subtitle_with_watermark(downloaded, sanitized_output_name + '_subtitle.srt', watermark_file, output_path)
     
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
-    trimmed_output_path = output_name + '_trimmed.mkv'
+    trimmed_output_path = sanitized_output_name + '_trimmed.mkv'
     trim_video(output_path, trimmed_output_path, duration=15)
-    client.send_document(chat_id, trimmed_output_path)
-    client.send_document(chat_id, output_path)
+
+    # Send the trimmed video with a safe filename
+    client.send_document(chat_id, trimmed_output_path, file_name="trimmed_output.mkv")
+    client.send_document(chat_id, output_path, file_name="full_output.mkv")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     # Clean up temporary files
     os.remove(downloaded)
-    os.remove(output_name + '_subtitle.srt')
+    os.remove(sanitized_output_name + '_subtitle.srt')
     os.remove(output_path)
     os.remove(trimmed_output_path)
 
