@@ -1,7 +1,6 @@
 import os
 import requests
 import subprocess
-import pysrt
 import json
 import threading
 import time
@@ -58,37 +57,31 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def get_video_duration(video_file):
-    result = subprocess.run(
-        ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', video_file],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT
-    )
-    return float(result.stdout)
-
-def seconds_to_subrip_time(seconds):
-    milliseconds = int((seconds % 1) * 1000)
-    seconds = int(seconds)
-    minutes, seconds = divmod(seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    return SubRipTime(hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds)
-
-def add_soft_subtitle_with_watermark(video_file, subtitle_file, watermark_file, output_file):
+def add_watermark(video_file, watermark_file, output_file):
     subprocess.run([
-        'ffmpeg', '-y', 
-        '-i', video_file,               # Input video
-        '-i', watermark_file,           # Input watermark
-        '-i', subtitle_file,            # Input subtitle file
+        'ffmpeg', '-y',
+        '-i', video_file,            # Input video
+        '-i', watermark_file,        # Input watermark
         '-filter_complex', (
-            '[0:v][1:v]overlay=W-w-10:H-h-10[watermarked];'  # Overlay watermark at bottom-right corner
-            '[watermarked][2:s]subtitles=filename=subtitle_file:force_style=Default,1'  # Burn subtitles onto watermarked video
+            '[0:v][1:v]overlay=W-w-10:H-h-10'  # Overlay watermark at bottom-right corner
         ),
-        '-c:v', 'copy',                # Copy video without re-encoding
-        '-c:a', 'copy',                # Copy audio without re-encoding
+        '-c:v', 'copy',              # Copy video without re-encoding
+        '-c:a', 'copy',              # Copy audio without re-encoding
         output_file
     ])
 
-
+def add_soft_subtitle(video_file, subtitle_file, output_file):
+    subprocess.run([
+        'ffmpeg', '-y',
+        '-i', video_file,            # Input video
+        '-i', subtitle_file,         # Input subtitle file
+        '-filter_complex', (
+            '[0:v][1:s]subtitles=filename=subtitle_file:force_style=Default,1'  # Burn subtitles onto video
+        ),
+        '-c:v', 'copy',              # Copy video without re-encoding
+        '-c:a', 'copy',              # Copy audio without re-encoding
+        output_file
+    ])
 
 def trim_video(input_file, output_file, duration=15):
     subprocess.run([
@@ -107,22 +100,30 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     processing_start_time = time.time()
 
     watermark_file = 'Watermark.png'
-    add_soft_subtitle_with_watermark(downloaded, output_name + '_subtitle.srt', watermark_file, output_path)
     
+    # Step 1: Add watermark
+    watermarked_video_path = f'watermarked_{output_name}.mkv'
+    add_watermark(downloaded, watermark_file, watermarked_video_path)
+
+    # Step 2: Add soft subtitles
+    final_output_path = f'final_{output_name}.mkv'
+    add_soft_subtitle(watermarked_video_path, output_name + '_subtitle.srt', final_output_path)
+
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trim_video(output_path, trimmed_output_path, duration=15)
+    trim_video(final_output_path, trimmed_output_path, duration=15)
     client.send_document(chat_id, trimmed_output_path)
-    client.send_document(chat_id, output_path)
+    client.send_document(chat_id, final_output_path)
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     # Clean up temporary files
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
-    os.remove(output_path)
+    os.remove(watermarked_video_path)
+    os.remove(final_output_path)
     os.remove(trimmed_output_path)
 
 @app.on_message(filters.command("start"))
