@@ -80,16 +80,14 @@ def add_soft_subtitle_with_watermark(video_file, subtitle_file, watermark_file, 
         '-i', watermark_file,           # Input watermark
         '-i', subtitle_file,            # Input subtitle file
         '-filter_complex', (
-            '[0:v][1:v]overlay=W-w-10:H-h-10[subt];'  # Overlay watermark at bottom-right corner
-            '[subt][2:s]subtitles=filename=subtitle_file:force_style=Default,1'  # Burn subtitles onto video
+            '[0:v][1:v]overlay=W-w-10:H-h-10[watermarked];'  # Overlay watermark at bottom-right corner
+            '[watermarked][2:s]subtitles=filename=subtitle_file:force_style=Default,1'  # Burn subtitles onto watermarked video
         ),
-        '-c:v', 'libx264', 
-        '-crf', '23', 
-        '-preset', 'ultrafast', 
-        '-threads', '0', 
-        '-c:a', 'copy',  # Copy audio without re-encoding
+        '-c:v', 'copy',                # Copy video without re-encoding
+        '-c:a', 'copy',                # Copy audio without re-encoding
         output_file
     ])
+
 
 
 def trim_video(input_file, output_file, duration=15):
