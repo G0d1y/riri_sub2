@@ -73,10 +73,12 @@ def seconds_to_subrip_time(seconds):
     hours, minutes = divmod(minutes, 60)
     return SubRipTime(hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds)
 
-def add_soft_subtitle(video_file, subtitle_file, output_file):
+def add_soft_subtitle_with_watermark(video_file, subtitle_file, watermark_file, output_file):
     subprocess.run([
-        'ffmpeg', '-i', video_file, '-i', subtitle_file, '-c', 'copy', '-c:s', 'srt', 
-        '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
+        'ffmpeg', '-y', '-i', video_file, '-i', subtitle_file, '-i', watermark_file,
+        '-filter_complex', '[0:v][2:v]overlay=W-w-10:H-h-10[subt];[subt]subtitles=' + subtitle_file, 
+        '-c:v', 'libx264', '-crf', '23', '-preset', 'fast', '-threads', '0', 
+        '-c:a', 'copy', output_file
     ])
 
 def trim_video(input_file, output_file, duration=15):
@@ -88,14 +90,15 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     output_path = output_name + '.mkv'
     message = client.send_message(chat_id, f"در حال پردازش: {output_path}...")
     message_id = message.id
-    
+
     downloaded = f'downloaded_{output_path}'
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
     processing_start_time = time.time()
 
-    add_soft_subtitle(downloaded, output_name + '_subtitle.srt', output_path)
+    watermark_file = 'Watermark.png'
+    add_soft_subtitle_with_watermark(downloaded, output_name + '_subtitle.srt', watermark_file, output_path)
     
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
@@ -107,6 +110,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_document(chat_id, output_path)
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
+    # Clean up temporary files
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
     os.remove(output_path)
