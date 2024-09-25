@@ -75,11 +75,16 @@ def seconds_to_subrip_time(seconds):
 
 def add_soft_subtitle_with_watermark(video_file, subtitle_file, watermark_file, output_file):
     subprocess.run([
-        'ffmpeg', '-y', '-i', video_file, '-i', subtitle_file, '-i', watermark_file,
-        '-filter_complex', '[0:v][2:v]overlay=W-w-10:H-h-10[subt];[subt]subtitles=' + subtitle_file, 
-        '-c:v', 'libx264', '-crf', '28', '-preset', 'ultrafast', '-threads', '0', 
-        '-c:a', 'copy', output_file
+        'ffmpeg', '-y', '-i', video_file, '-i', watermark_file,
+        '-filter_complex', '[0:v][1:v]overlay=W-w-10:H-h-10',  # Overlay watermark at bottom-right corner
+        '-c:v', 'libx264', '-crf', '23', '-preset', 'ultrafast', '-threads', '0',  # Fast encoding
+        '-c:a', 'copy',  # Copy audio without re-encoding
+        '-c:s', 'copy',  # Copy subtitle stream without re-encoding
+        '-i', subtitle_file,  # Add the subtitle file as a separate stream
+        '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default',  # Subtitle metadata
+        output_file
     ])
+
 
 def trim_video(input_file, output_file, duration=15):
     subprocess.run([
