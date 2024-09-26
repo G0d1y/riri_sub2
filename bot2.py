@@ -4,9 +4,9 @@ import subprocess
 import json
 import threading
 import time
-from pysrt import SubRipTime
+from pysrt import SubRipTime , SubRipItem
+import pysrt
 from pyrogram import Client, filters
-
 with open('config.json') as config_file:
     config = json.load(config_file)
 
@@ -116,25 +116,31 @@ def add_watermark(video_path, output_path, watermark_duration=20):
     return output_path
 
 def add_custom_subtitles(subtitle_file, custom_subtitle_path):
-    with open(subtitle_file, 'r', encoding='utf-8') as f:
-        subs = f.readlines()
+    subs = pysrt.open(subtitle_file)
 
     # Define custom subtitles
     custom_subtitles = [
         {
-            "start": "00:00:01,000",
-            "end": "00:00:08,000",
+            "start": SubRipTime.from_string("00:00:01,000"),
+            "end": SubRipTime.from_string("00:00:08,000"),
             "text": '<font color="#ef6d80">꧁ بزرگترین کانال دانلود سریال کره ای ꧂\n@RiRiKdrama ┊ ریری کیدراما</font>'
         },
         {
-            "start": "00:00:00,000",  # Placeholder, will be updated
-            "end": "00:00:05,000",
+            "start": SubRipTime.from_string("00:00:00,000"),  # Placeholder, will be updated
+            "end": SubRipTime.from_string("00:00:05,000"),
             "text": '<font color="#62ffd7">:) لطفا برای حمایت عضو کانال تلگرامی ما بشید\n《 @RiRiKdrama 》</font>'
         }
     ]
 
-    # Add the first custom subtitle
-    subs.append(f"{len(subs) + 1}\n{custom_subtitles[0]['start']} --> {custom_subtitles[0]['end']}\n{custom_subtitles[0]['text']}\n\n")
+    # Add the first custom subtitle at the start
+    subs.append(
+        SubRipItem(
+            index=len(subs) + 1,
+            start=custom_subtitles[0]["start"],
+            end=custom_subtitles[0]["end"],
+            text=custom_subtitles[0]["text"]
+        )
+    )
 
     # Find a place to add the second custom subtitle
     empty_location_found = False
@@ -145,24 +151,39 @@ def add_custom_subtitles(subtitle_file, custom_subtitle_path):
     while current_time < duration - subtitle_duration:
         # Check if there's a 5-second gap without existing subtitles
         is_empty = True
-        for i in range(len(subs)):
-            start_time, end_time = map(SubRipTime.from_string, subs[i].split(' --> ')[0].strip().split())
-            if start_time.seconds <= current_time + subtitle_duration and end_time.seconds >= current_time:
+        for sub in subs:
+            if sub.start <= SubRipTime.from_seconds(current_time + subtitle_duration) and sub.end >= SubRipTime.from_seconds(current_time):
                 is_empty = False
                 break
         
         if is_empty:
-            custom_subtitles[1]["start"] = SubRipTime.from_seconds(current_time).to_string()
-            custom_subtitles[1]["end"] = SubRipTime.from_seconds(current_time + subtitle_duration).to_string()
-            subs.append(f"{len(subs) + 1}\n{custom_subtitles[1]['start']} --> {custom_subtitles[1]['end']}\n{custom_subtitles[1]['text']}\n\n")
+            # If an empty spot is found, add the second custom subtitle
+            start_time = SubRipTime.from_seconds(current_time)
+            end_time = SubRipTime.from_seconds(current_time + subtitle_duration)
+            custom_subtitles[1]["start"] = start_time
+            custom_subtitles[1]["end"] = end_time
+
+            subs.append(
+                SubRipItem(
+                    index=len(subs) + 1,
+                    start=start_time,
+                    end=end_time,
+                    text=custom_subtitles[1]["text"]
+                )
+            )
             empty_location_found = True
             break
         
         current_time += 1  # Check each second
 
+    if not empty_location_found:
+        print("Could not find an empty location for the second custom subtitle.")
+
+    # Sort subtitles by start time to ensure they are in the correct order
+    subs.sort()
+
     # Write the modified subtitles back to a new file
-    with open(custom_subtitle_path, 'w', encoding='utf-8') as f:
-        f.writelines(subs)
+    subs.save(custom_subtitle_path, encoding='utf-8')
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     custom_subtitle_file = 'custom_subtitle.srt'
