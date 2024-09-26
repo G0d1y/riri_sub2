@@ -57,54 +57,62 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def add_watermark_20_sec(input_video, watermark_text, output_video, font_file):
-    # Step 1: Cut the first 20 seconds
-    first_part = "first_20_sec.mp4"
-    command_cut_20_sec = [
-        'ffmpeg',
-        '-i', input_video,
-        '-t', '20',  # first 20 seconds
-        '-c', 'copy',  # no re-encoding
-        first_part
-    ]
-    subprocess.run(command_cut_20_sec)
-    
-    # Step 2: Add watermark to the first 20 seconds
-    watermarked_first_part = "watermarked_first_20_sec.mp4"
-    command_watermark = [
-        'ffmpeg',
-        '-i', first_part,
-        '-vf', f"drawtext=text='{watermark_text.replace('\'', '\\\'')}':fontcolor=red:fontsize=24:fontfile={font_file}:x=10:y=10:enable='lte(t,20)'",
-        '-c:a', 'copy',  # copy audio without re-encoding
-        watermarked_first_part
-    ]
-    subprocess.run(command_watermark)
+async def add_watermark(video_path, output_path, watermark_duration=20):
+    #watermark_text = "بزرگترین کانال دانلود سریال کره ای\n@RiRiKdrama |  ریری کیدراما"
+    #font_path = 'Sahel-Bold.ttf'
+    watermarked_segment_path = 'watermarked_segment.mkv'
+    remaining_part_path = 'remaining_part.mkv'
+    concat_file_path = 'concat_list.txt'
 
-    # Step 3: Cut the rest of the video (starting from 20 seconds)
-    second_part = "rest_of_video.mp4"
-    command_cut_rest = [
-        'ffmpeg',
-        '-i', input_video,
-        '-ss', '20',  # skip first 20 seconds
-        '-c', 'copy',  # no re-encoding
-        second_part
+    watermark_cmd = [
+    'ffmpeg',
+    '-i', video_path,
+    '-i', 'Watermark.png',
+    '-filter_complex', (
+        f"[1]scale=iw*1:-1[wm];[0][wm]overlay=x=10:y=10"
+    ),
+    '-t', str(watermark_duration),
+    '-c:v', 'libx264',
+    '-crf', '23',
+    '-preset', 'slow',
+    '-c:a', 'copy',
+    '-y',
+    watermarked_segment_path 
     ]
-    subprocess.run(command_cut_rest)
+    await subprocess.run(watermark_cmd)
+
+    extract_cmd = [
+        'ffmpeg',
+        '-i', video_path,
+        '-ss', str(watermark_duration),
+        '-c:v', 'copy',
+        '-c:a', 'copy',
+        '-y',
+        remaining_part_path
+    ]
+    subprocess.run(extract_cmd)
+
+    print(watermarked_segment_path, remaining_part_path, output_path)
     
-    # Step 4: Concatenate the watermarked first part with the rest of the video
-    with open('concat_list.txt', 'w') as f:
-        f.write(f"file '{watermarked_first_part}'\n")
-        f.write(f"file '{second_part}'\n")
-    
-    command_concat = [
+    with open(concat_file_path, 'w') as f:
+        f.write(f"file '{watermarked_segment_path}'\n")
+        f.write(f"file '{remaining_part_path}'\n")
+
+    concat_cmd = [
         'ffmpeg',
         '-f', 'concat',
         '-safe', '0',
-        '-i', 'concat_list.txt',
-        '-c', 'copy',  # no re-encoding
-        output_video
+        '-i', concat_file_path,
+        '-c', 'copy',
+        '-y',
+        output_path
     ]
-    subprocess.run(command_concat)
+    subprocess.run(concat_cmd)
+
+    for file_path in [watermarked_segment_path, remaining_part_path, concat_file_path]:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    return output_path
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
@@ -130,9 +138,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     
     # Step 1: Add watermark
     watermarked_video_path = f'watermarked_{output_name}.mkv'
-    font_path = "Sahel-Bold.ttf"
-    watermark_text = "بزرگترین کانال دانلود سریال کره ای\n @RiRiKdrama | ریری کیدراما"
-    add_watermark_20_sec(downloaded, watermarked_video_path , watermark_text , font_path)
+    add_watermark(downloaded, watermarked_video_path , 20)
 
     # Step 2: Add soft subtitles
     final_output_path = f'final_{output_name}.mkv'
