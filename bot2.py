@@ -72,15 +72,8 @@ def add_watermark(video_file, watermark_file, output_file):
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
-        'ffmpeg', '-y',
-        '-i', video_file,            # Input video
-        '-i', subtitle_file,         # Input subtitle file
-        '-filter_complex', (
-            '[0:v][1:s]subtitles=filename=subtitle_file:force_style=Default,1'  # Burn subtitles onto video
-        ),
-        '-c:v', 'copy',              # Copy video without re-encoding
-        '-c:a', 'copy',              # Copy audio without re-encoding
-        output_file
+        'ffmpeg', '-i', video_file, '-i', subtitle_file, '-c', 'copy', '-c:s', 'srt', 
+        '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
     ])
 
 def trim_video(input_file, output_file, duration=15):
