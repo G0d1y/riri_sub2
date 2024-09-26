@@ -59,7 +59,7 @@ def download_file(url, filename, chat_id, message_id):
 
 def add_watermark(input_video, watermark_image, output_video):
     num_threads = os.cpu_count()
-
+    print(num_threads)
     command = [
         'ffmpeg',
         '-i', input_video,
