@@ -201,8 +201,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     trimmed_output_path = output_name + '_trimmed.mkv'
     trim_video(final_output_path, trimmed_output_path, duration=60)
-    client.send_document(chat_id, trimmed_output_path)
-    client.send_document(chat_id, final_output_path)
+    client.send_document(chat_id, trimmed_output_path , thumb="cover.jpg")
+    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
@@ -239,5 +239,20 @@ def collect_links(client, message):
             threading.Thread(target=process_video_with_links, args=(video_link, subtitle_link, client, message.chat.id, output_name)).start()
 
         video_tasks.clear()
+
+@app.on_message(filters.photo & filters.private)
+async def handle_cover(client, message):
+    try:
+        cover_image_path = 'cover.jpg'
+        
+        if os.path.exists(cover_image_path):
+            os.remove(cover_image_path)
+        
+        downloaded_file_path = await message.download()
+        os.rename(downloaded_file_path, cover_image_path)
+        
+        await message.reply("عکس کاور دریافت شد...")
+    except Exception as e:
+        await message.reply(f"Error handling cover image: {str(e)}")
 
 app.run()
