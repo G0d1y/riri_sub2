@@ -65,10 +65,9 @@ def add_watermark(input_video, output_video):
     command = [
         'ffmpeg',
         '-i', input_video,
-        '-vf', f"drawtext=text='{watermark_text}':fontfile='{font_path}':fontcolor=red:fontsize=24:x=10:y=10",
+        '-vf', f"drawtext=text='{watermark_text}':fontfile='{font_path}':fontcolor=red:fontsize=24:x=10:y=10:enable='lt(t,20)'",
         '-c:a', 'copy',  # Copy audio without re-encoding
         '-c:s', 'copy',  # Copy subtitles without re-encoding
-        '-t', '20',  # Limit video to the first 20 seconds
         '-threads', str(num_threads),
         output_video
     ]
