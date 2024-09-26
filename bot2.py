@@ -61,13 +61,14 @@ def add_watermark(input_video, output_video):
     num_threads = os.cpu_count()
     print(num_threads)
     watermark_text = "بزرگترین کانال دانلود سریال کره ای\n @RiRiKdrama | ریری کیدراما"
+    font_path = "font.ttf"
     command = [
         'ffmpeg',
         '-i', input_video,
-        '-vf', f"drawtext=text='{watermark_text}':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2",
-        '-c:a', 'copy',  # Copy the audio without re-encoding
+        '-vf', f"drawtext=text='{watermark_text}':fontfile='{font_path}':fontcolor=red:fontsize=24:x=10:y=10",
+        '-c:a', 'copy',  # Copy audio without re-encoding
         '-c:s', 'copy',  # Copy subtitles without re-encoding
-        '-t', '20',  # Limit the video to the first 20 seconds
+        '-t', '20',  # Limit video to the first 20 seconds
         '-threads', str(num_threads),
         output_video
     ]
@@ -80,7 +81,7 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
         '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
     ])
 
-def trim_video(input_file, output_file, duration=15):
+def trim_video(input_file, output_file, duration=60):
     subprocess.run([
         'ffmpeg', '-i', input_file, '-t', str(duration), '-c', 'copy', output_file
     ])
@@ -109,7 +110,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trim_video(final_output_path, trimmed_output_path, duration=15)
+    trim_video(final_output_path, trimmed_output_path, duration=60)
     client.send_document(chat_id, trimmed_output_path)
     client.send_document(chat_id, final_output_path)
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
