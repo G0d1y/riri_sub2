@@ -57,17 +57,20 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def add_watermark(input_video, watermark_image, output_video):
+def add_watermark(input_video, output_video):
     num_threads = os.cpu_count()
     print(num_threads)
+    watermark_text = "بزرگترین کانال دانلود سریال کره ای @RiRiKdrama | ریری کیدراما"
     command = [
         'ffmpeg',
         '-i', input_video,
-        '-i', watermark_image,
-        '-filter_complex', 'overlay=x=10:y=20',
+        '-vf', f"drawtext=text='{watermark_text}':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2",
+        '-c:a', 'copy',  # Copy the audio without re-encoding
+        '-c:s', 'copy',  # Copy subtitles without re-encoding
         '-threads', str(num_threads),
         output_video
     ]
+    
     subprocess.run(command)
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
@@ -91,12 +94,10 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
     processing_start_time = time.time()
-
-    watermark_file = 'Watermark.png'
     
     # Step 1: Add watermark
     watermarked_video_path = f'watermarked_{output_name}.mkv'
-    add_watermark(downloaded, watermark_file, watermarked_video_path)
+    add_watermark(downloaded, watermarked_video_path)
 
     # Step 2: Add soft subtitles
     final_output_path = f'final_{output_name}.mkv'
