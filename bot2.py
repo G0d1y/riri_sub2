@@ -67,6 +67,7 @@ def add_watermark(input_video, output_video):
         '-vf', f"drawtext=text='{watermark_text}':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2",
         '-c:a', 'copy',  # Copy the audio without re-encoding
         '-c:s', 'copy',  # Copy subtitles without re-encoding
+        '-t', '20',  # Limit the video to the first 20 seconds
         '-threads', str(num_threads),
         output_video
     ]
