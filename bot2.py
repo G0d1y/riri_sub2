@@ -57,18 +57,22 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def add_watermark(video_file, watermark_file, output_file):
-    subprocess.run([
-        'ffmpeg', '-y',
-        '-i', video_file,
-        '-i', watermark_file,
-        '-filter_complex', (
-            '[0:v][1:v]overlay=W-w-10:H-h-10'
-        ),
-        '-c:v', 'copy',
-        '-c:a', 'copy',
-        output_file
-    ])
+def add_watermark(input_video, watermark_image, output_video):
+    num_threads = os.cpu_count()
+
+    command = [
+        'ffmpeg',
+        '-i', input_video,
+        '-i', watermark_image,
+        '-filter_complex', 'overlay=W-w-10:H-h-10',
+        '-c:v', 'libx264',
+        '-preset', 'fast',
+        '-threads', str(num_threads),  # استفاده از تمام هسته‌ها
+        '-crf', '23',
+        output_video
+    ]
+    
+    subprocess.run(command)
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
