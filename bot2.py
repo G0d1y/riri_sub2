@@ -64,7 +64,7 @@ def add_watermark(input_video, watermark_image, output_video):
         'ffmpeg',
         '-i', input_video,
         '-i', watermark_image,
-        '-filter_complex', 'overlay=x=10:y=20"',
+        '-filter_complex', 'overlay=x=10:y=20',
         '-threads', str(num_threads),
         output_video
     ]
