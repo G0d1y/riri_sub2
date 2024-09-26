@@ -74,7 +74,7 @@ def add_watermark(video_path, output_path, watermark_duration=20):
     '-t', str(watermark_duration),
     '-c:v', 'libx264',
     '-crf', '23',
-    '-preset', 'slow',
+    '-preset', 'superslow',
     '-c:a', 'copy',
     '-y',
     watermarked_segment_path 
@@ -115,9 +115,61 @@ def add_watermark(video_path, output_path, watermark_duration=20):
             os.remove(file_path)
     return output_path
 
+def add_custom_subtitles(subtitle_file, custom_subtitle_path):
+    with open(subtitle_file, 'r', encoding='utf-8') as f:
+        subs = f.readlines()
+
+    # Define custom subtitles
+    custom_subtitles = [
+        {
+            "start": "00:00:01,000",
+            "end": "00:00:08,000",
+            "text": '<font color="#ef6d80">꧁ بزرگترین کانال دانلود سریال کره ای ꧂\n@RiRiKdrama ┊ ریری کیدراما</font>'
+        },
+        {
+            "start": "00:00:00,000",  # Placeholder, will be updated
+            "end": "00:00:05,000",
+            "text": '<font color="#62ffd7">:) لطفا برای حمایت عضو کانال تلگرامی ما بشید\n《 @RiRiKdrama 》</font>'
+        }
+    ]
+
+    # Add the first custom subtitle
+    subs.append(f"{len(subs) + 1}\n{custom_subtitles[0]['start']} --> {custom_subtitles[0]['end']}\n{custom_subtitles[0]['text']}\n\n")
+
+    # Find a place to add the second custom subtitle
+    empty_location_found = False
+    current_time = 0
+    duration = 60  # Assume the video is 60 seconds long
+    subtitle_duration = 5  # Duration of the custom subtitle
+
+    while current_time < duration - subtitle_duration:
+        # Check if there's a 5-second gap without existing subtitles
+        is_empty = True
+        for i in range(len(subs)):
+            start_time, end_time = map(SubRipTime.from_string, subs[i].split(' --> ')[0].strip().split())
+            if start_time.seconds <= current_time + subtitle_duration and end_time.seconds >= current_time:
+                is_empty = False
+                break
+        
+        if is_empty:
+            custom_subtitles[1]["start"] = SubRipTime.from_seconds(current_time).to_string()
+            custom_subtitles[1]["end"] = SubRipTime.from_seconds(current_time + subtitle_duration).to_string()
+            subs.append(f"{len(subs) + 1}\n{custom_subtitles[1]['start']} --> {custom_subtitles[1]['end']}\n{custom_subtitles[1]['text']}\n\n")
+            empty_location_found = True
+            break
+        
+        current_time += 1  # Check each second
+
+    # Write the modified subtitles back to a new file
+    with open(custom_subtitle_path, 'w', encoding='utf-8') as f:
+        f.writelines(subs)
+
 def add_soft_subtitle(video_file, subtitle_file, output_file):
+    custom_subtitle_file = 'custom_subtitle.srt'
+    add_custom_subtitles(subtitle_file, custom_subtitle_file)
+
     subprocess.run([
-        'ffmpeg', '-i', video_file, '-i', subtitle_file, '-c', 'copy', '-c:s', 'srt', 
+        'ffmpeg', '-i', video_file, '-i', custom_subtitle_file, '-c', 'copy', '-c:s', 'srt', 
         '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
     ])
 
