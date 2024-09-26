@@ -57,22 +57,55 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def add_watermark(input_video, output_video):
+def cut_and_watermark(input_video, output_video, watermark_text, font_path):
     num_threads = os.cpu_count()
-    print(num_threads)
-    watermark_text = "بزرگترین کانال دانلود سریال کره ای\n @RiRiKdrama | ریری کیدراما"
-    font_path = "font.ttf"
-    command = [
+    
+    # Step 1: Cut the first 20 seconds and add watermark
+    watermark_segment = "watermarked_segment.mp4"
+    command_watermark = [
         'ffmpeg',
         '-i', input_video,
         '-vf', f"drawtext=text='{watermark_text}':fontfile='{font_path}':fontcolor=red:fontsize=24:x=10:y=10:enable='lt(t,20)'",
+        '-t', '20',  # Limit to 20 seconds
         '-c:a', 'copy',  # Copy audio without re-encoding
         '-c:s', 'copy',  # Copy subtitles without re-encoding
         '-threads', str(num_threads),
+        watermark_segment
+    ]
+    subprocess.run(command_watermark)
+
+    # Step 2: Cut the rest of the video (from 20 seconds to end)
+    rest_segment = "rest_segment.mp4"
+    command_rest = [
+        'ffmpeg',
+        '-i', input_video,
+        '-ss', '20',  # Start from 20 seconds
+        '-c', 'copy',  # Copy both audio and video
+        rest_segment
+    ]
+    subprocess.run(command_rest)
+
+    # Step 3: Concatenate the two segments
+    concat_file = "concat_list.txt"
+    with open(concat_file, 'w') as f:
+        f.write(f"file '{watermark_segment}'\n")
+        f.write(f"file '{rest_segment}'\n")
+
+    command_concat = [
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concat_file,
+        '-c', 'copy',  # Copy both audio and video
+        '-threads', str(num_threads),
         output_video
     ]
-    
-    subprocess.run(command)
+    subprocess.run(command_concat)
+
+    # Clean up temporary files
+    os.remove(watermark_segment)
+    os.remove(rest_segment)
+    os.remove(concat_file)
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
@@ -98,7 +131,9 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     
     # Step 1: Add watermark
     watermarked_video_path = f'watermarked_{output_name}.mkv'
-    add_watermark(downloaded, watermarked_video_path)
+    font_path = "font.ttf"
+    watermark_text = "بزرگترین کانال دانلود سریال کره ای\n @RiRiKdrama | ریری کیدراما"
+    cut_and_watermark(downloaded, watermarked_video_path , watermark_text , font_path)
 
     # Step 2: Add soft subtitles
     final_output_path = f'final_{output_name}.mkv'
