@@ -57,7 +57,7 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-async def add_watermark(video_path, output_path, watermark_duration=20):
+def add_watermark(video_path, output_path, watermark_duration=20):
     #watermark_text = "بزرگترین کانال دانلود سریال کره ای\n@RiRiKdrama |  ریری کیدراما"
     #font_path = 'Sahel-Bold.ttf'
     watermarked_segment_path = 'watermarked_segment.mkv'
@@ -79,7 +79,7 @@ async def add_watermark(video_path, output_path, watermark_duration=20):
     '-y',
     watermarked_segment_path 
     ]
-    await subprocess.run(watermark_cmd)
+    subprocess.run(watermark_cmd)
 
     extract_cmd = [
         'ffmpeg',
@@ -171,7 +171,7 @@ def start_processing(client, message):
             file_path = os.path.join(directory2, filename)
             if os.path.isfile(file_path):
                     os.remove(file_path)
-                    
+
 @app.on_message(filters.text)
 def collect_links(client, message):
     tasks = message.text.splitlines()
