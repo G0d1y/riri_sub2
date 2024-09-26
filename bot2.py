@@ -60,13 +60,13 @@ def download_file(url, filename, chat_id, message_id):
 def add_watermark(video_file, watermark_file, output_file):
     subprocess.run([
         'ffmpeg', '-y',
-        '-i', video_file,            # Input video
-        '-i', watermark_file,        # Input watermark
+        '-i', video_file,
+        '-i', watermark_file,
         '-filter_complex', (
-            '[0:v][1:v]overlay=W-w-10:H-h-10'  # Overlay watermark at bottom-right corner
+            '[0:v][1:v]overlay=W-w-10:H-h-10'
         ),
-        '-c:v', 'copy',              # Copy video without re-encoding
-        '-c:a', 'copy',              # Copy audio without re-encoding
+        '-c:v', 'copy',
+        '-c:a', 'copy',
         output_file
     ])
 
@@ -96,11 +96,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     
     # Step 1: Add watermark
     watermarked_video_path = f'watermarked_{output_name}.mkv'
-    #add_watermark(downloaded, watermark_file, watermarked_video_path)
+    add_watermark(downloaded, watermark_file, watermarked_video_path)
 
     # Step 2: Add soft subtitles
     final_output_path = f'final_{output_name}.mkv'
-    add_soft_subtitle(downloaded, output_name + '_subtitle.srt', final_output_path)
+    add_soft_subtitle(watermarked_video_path, output_name + '_subtitle.srt', final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
