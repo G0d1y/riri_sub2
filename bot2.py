@@ -74,7 +74,7 @@ def add_watermark_20_sec(input_video, watermark_text, output_video, font_file):
     command_watermark = [
         'ffmpeg',
         '-i', first_part,
-        '-vf', f"drawtext=text='{watermark_text}':fontcolor=red:fontsize=24:fontfile={font_file}:x=10:y=10:enable='lte(t,20)'",
+        '-vf', f"drawtext=text='{watermark_text.replace('\'', '\\\'')}':fontcolor=red:fontsize=24:fontfile={font_file}:x=10:y=10:enable='lte(t,20)'",
         '-c:a', 'copy',  # copy audio without re-encoding
         watermarked_first_part
     ]
