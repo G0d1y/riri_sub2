@@ -60,7 +60,7 @@ def download_file(url, filename, chat_id, message_id):
 def add_watermark(input_video, output_video):
     num_threads = os.cpu_count()
     print(num_threads)
-    watermark_text = "بزرگترین کانال دانلود سریال کره ای @RiRiKdrama | ریری کیدراما"
+    watermark_text = "بزرگترین کانال دانلود سریال کره ای\n @RiRiKdrama | ریری کیدراما"
     command = [
         'ffmpeg',
         '-i', input_video,
