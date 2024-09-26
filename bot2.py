@@ -64,14 +64,10 @@ def add_watermark(input_video, watermark_image, output_video):
         'ffmpeg',
         '-i', input_video,
         '-i', watermark_image,
-        '-filter_complex', 'overlay=W-w-10:H-h-10',
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-threads', str(num_threads),  # استفاده از تمام هسته‌ها
-        '-crf', '23',
+        '-filter_complex', 'overlay=20:20"',
+        '-threads', str(num_threads),
         output_video
     ]
-    
     subprocess.run(command)
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
