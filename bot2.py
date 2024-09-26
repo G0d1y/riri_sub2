@@ -103,11 +103,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     
     # Step 1: Add watermark
     watermarked_video_path = f'watermarked_{output_name}.mkv'
-    add_watermark(downloaded, watermark_file, watermarked_video_path)
+    #add_watermark(downloaded, watermark_file, watermarked_video_path)
 
     # Step 2: Add soft subtitles
     final_output_path = f'final_{output_name}.mkv'
-    add_soft_subtitle(watermarked_video_path, output_name + '_subtitle.srt', final_output_path)
+    add_soft_subtitle(downloaded, output_name + '_subtitle.srt', final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
