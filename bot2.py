@@ -115,19 +115,26 @@ def add_watermark(video_path, output_path, watermark_duration=20):
             os.remove(file_path)
     return output_path
 
+def seconds_to_subrip_time(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    milliseconds = int((seconds - int(seconds)) * 1000)
+    return SubRipTime(hours=hours, minutes=minutes, seconds=secs, milliseconds=milliseconds)
+
 def add_custom_subtitles(subtitle_file, custom_subtitle_path):
     subs = pysrt.open(subtitle_file)
 
     # Define custom subtitles
     custom_subtitles = [
         {
-            "start": SubRipTime.from_string("00:00:01,000"),
-            "end": SubRipTime.from_string("00:00:08,000"),
+            "start": SubRipTime(0, 0, 1, 0),
+            "end": SubRipTime(0, 0, 8, 0),
             "text": '<font color="#ef6d80">꧁ بزرگترین کانال دانلود سریال کره ای ꧂\n@RiRiKdrama ┊ ریری کیدراما</font>'
         },
         {
-            "start": SubRipTime.from_string("00:00:00,000"),  # Placeholder, will be updated
-            "end": SubRipTime.from_string("00:00:05,000"),
+            "start": SubRipTime(0, 0, 0, 0),  # Placeholder, will be updated
+            "end": SubRipTime(0, 0, 5, 0),
             "text": '<font color="#62ffd7">:) لطفا برای حمایت عضو کانال تلگرامی ما بشید\n《 @RiRiKdrama 》</font>'
         }
     ]
@@ -152,22 +159,22 @@ def add_custom_subtitles(subtitle_file, custom_subtitle_path):
         # Check if there's a 5-second gap without existing subtitles
         is_empty = True
         for sub in subs:
-            if sub.start <= SubRipTime.from_seconds(current_time + subtitle_duration) and sub.end >= SubRipTime.from_seconds(current_time):
+            start_time = seconds_to_subrip_time(current_time)
+            end_time = seconds_to_subrip_time(current_time + subtitle_duration)
+            if sub.start <= end_time and sub.end >= start_time:
                 is_empty = False
                 break
         
         if is_empty:
             # If an empty spot is found, add the second custom subtitle
-            start_time = SubRipTime.from_seconds(current_time)
-            end_time = SubRipTime.from_seconds(current_time + subtitle_duration)
-            custom_subtitles[1]["start"] = start_time
-            custom_subtitles[1]["end"] = end_time
+            custom_subtitles[1]["start"] = seconds_to_subrip_time(current_time)
+            custom_subtitles[1]["end"] = seconds_to_subrip_time(current_time + subtitle_duration)
 
             subs.append(
                 SubRipItem(
                     index=len(subs) + 1,
-                    start=start_time,
-                    end=end_time,
+                    start=custom_subtitles[1]["start"],
+                    end=custom_subtitles[1]["end"],
                     text=custom_subtitles[1]["text"]
                 )
             )
@@ -184,7 +191,7 @@ def add_custom_subtitles(subtitle_file, custom_subtitle_path):
 
     # Write the modified subtitles back to a new file
     subs.save(custom_subtitle_path, encoding='utf-8')
-
+    
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     custom_subtitle_file = 'custom_subtitle.srt'
     add_custom_subtitles(subtitle_file, custom_subtitle_file)
