@@ -109,6 +109,7 @@ async def add_watermark(video_path, output_path, watermark_duration=20):
     ]
     subprocess.run(concat_cmd)
 
+
     for file_path in [watermarked_segment_path, remaining_part_path, concat_file_path]:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -136,11 +137,9 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     processing_start_time = time.time()
     
-    # Step 1: Add watermark
     watermarked_video_path = f'watermarked_{output_name}.mkv'
     add_watermark(downloaded, watermarked_video_path , 20)
 
-    # Step 2: Add soft subtitles
     final_output_path = f'final_{output_name}.mkv'
     add_soft_subtitle(watermarked_video_path, output_name + '_subtitle.srt', final_output_path)
 
@@ -154,7 +153,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_document(chat_id, final_output_path)
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
-    # Clean up temporary files
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
     os.remove(watermarked_video_path)
@@ -166,7 +164,14 @@ def start_processing(client, message):
     global video_tasks
     video_tasks = []
     client.send_message(message.chat.id, "لطفاً لینک‌های ویدیو و زیرنویس و نام فایل خروجی را ارسال کنید.\nبه صورت زیر:\nvideo_link | subtitle_link | output_name")
-
+    directory2 = './'
+    extensions_to_delete = ['.srt', '.mkv', '.mp4']
+    for filename in os.listdir(directory2):
+        if any(filename.endswith(ext) for ext in extensions_to_delete):
+            file_path = os.path.join(directory2, filename)
+            if os.path.isfile(file_path):
+                    os.remove(file_path)
+                    
 @app.on_message(filters.text)
 def collect_links(client, message):
     tasks = message.text.splitlines()
