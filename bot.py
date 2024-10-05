@@ -1,4 +1,5 @@
 import os
+import queue
 import requests
 import subprocess
 import json
@@ -20,8 +21,9 @@ app = Client(
     api_hash=api_hash,
     bot_token=bot_token
 )
-
+video_queue = queue.Queue()
 video_tasks = []
+admins = [5429433533 , 6459990242]
 
 def download_file(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
@@ -201,12 +203,16 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
         '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
     ])
 
-def trim_video(input_file, output_file, duration=60):
+def trim_video(input_file, output_file, duration=90):
     subprocess.run([
         'ffmpeg', '-i', input_file, '-t', str(duration), '-c', 'copy', output_file
     ])
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
+    if chat_id not in admins:
+        client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
+        return
+
     output_path = output_name + '.mkv'
     message = client.send_message(chat_id, f"در حال پردازش: {output_path}...")
     message_id = message.id
@@ -228,7 +234,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trim_video(final_output_path, trimmed_output_path, duration=60)
+    trim_video(final_output_path, trimmed_output_path, duration=90)
     client.send_document(chat_id, trimmed_output_path , thumb="cover.jpg")
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
@@ -254,7 +260,10 @@ def start_processing(client, message):
 
 @app.on_message(filters.text)
 def collect_links(client, message):
-    tasks = message.text.splitlines()
+    if message.chat.id not in admins:
+        client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
+        return
+    tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
     for i in range(0, len(tasks), 3):
         if i + 2 < len(tasks):
@@ -263,18 +272,18 @@ def collect_links(client, message):
             output_name = tasks[i + 2].strip()
 
             if video_link and subtitle_link and output_name:
-                video_tasks.append((video_link, subtitle_link, output_name))
+                video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
 
-    if video_tasks:
+    if not video_queue.empty():
         client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
-        for video_link, subtitle_link, output_name in video_tasks:
-            threading.Thread(
-                target=process_video_with_links,
-                args=(video_link, subtitle_link, client, message.chat.id, output_name)
-            ).start()
+def process_video_queue():
+    while True:
+        video_link, subtitle_link, output_name, client, chat_id = video_queue.get()
+        process_video_with_links(video_link, subtitle_link, client, chat_id, output_name)
+        video_queue.task_done()
 
-        video_tasks.clear()
+threading.Thread(target=process_video_queue, daemon=True).start()
 
 @app.on_message(filters.photo & filters.private)
 async def handle_cover(client, message):
