@@ -107,7 +107,7 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     print("~~~~~~~~ ADDING SOFTSUB ~~~~~~~~")
     subprocess.run([
-        'ffmpeg', '-err_detect', 'ignore_err', '-i', video_file, '-i', subtitle_file, 
+        'ffmpeg', '-i', video_file, '-i', subtitle_file, 
         '-c', 'copy', '-c:s', 'srt', '-metadata:s:s:0', 'title=@RiRiMovies', 
         '-disposition:s:0', 'default', output_file
     ])
@@ -131,7 +131,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
-    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
+    #shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
     processing_start_time = time.time()
     
@@ -139,21 +139,21 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     add_watermark(downloaded, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
+    #add_soft_subtitle(full_video_path, output_name + '_subtitle.srt', final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trim_video(final_output_path, trimmed_output_path, duration=90)
+    trim_video(full_video_path, trimmed_output_path, duration=90)
     client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
-    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+    client.send_document(chat_id, full_video_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
-    os.remove(shifted_subtitle_file)
+    #os.remove(shifted_subtitle_file)
     os.remove(full_video_path)
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
