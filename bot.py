@@ -5,6 +5,7 @@ import subprocess
 import json
 import threading
 import time
+import re
 from pysrt import SubRipTime , SubRipItem
 import pysrt
 from pyrogram import Client, filters
@@ -24,6 +25,22 @@ app = Client(
 video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
+
+def run_ffmpeg_with_error_check(command, input_file, output_file):
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    stdout, stderr = process.communicate()
+    
+    if re.search(r"missing picture in access unit", stderr, re.IGNORECASE):
+        print(f"Error detected in {input_file}. Re-encoding...")
+        reencode_video(input_file, output_file)
+    else:
+        print(f"Processing complete: {output_file}")
+
+def reencode_video(input_file, output_file):
+    reencode_command = [
+        'ffmpeg', '-i', input_file, '-c:v', 'libx264', '-c:a', 'aac', '-strict', 'experimental', output_file
+    ]
+    subprocess.run(reencode_command)
 
 def download_file(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
@@ -103,11 +120,13 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     return shifted_subtitle_file
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
-    subprocess.run([
-        'ffmpeg', '-err_detect', 'ignore_err', '-i', video_file, '-i', subtitle_file, 
+    ffmpeg_command = [
+        'ffmpeg', '-i', video_file, '-i', subtitle_file, 
         '-c', 'copy', '-c:s', 'srt', '-metadata:s:s:0', 'title=@RiRiMovies', 
         '-disposition:s:0', 'default', output_file
-    ])
+    ]
+    
+    run_ffmpeg_with_error_check(ffmpeg_command, video_file, output_file)
 
 def trim_video(input_file, output_file, duration=90):
     subprocess.run([
