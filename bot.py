@@ -102,6 +102,7 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     subs.save(shifted_subtitle_file, encoding='utf-8')
     return shifted_subtitle_file
 
+
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', video_file, '-i', subtitle_file, 
