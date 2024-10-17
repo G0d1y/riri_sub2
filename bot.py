@@ -63,21 +63,32 @@ def create_file_list(mkv_files, list_file_path='file_list.txt'):
     """Create a text file that contains the list of MKV files to be concatenated."""
     with open(list_file_path, 'w') as file_list:
         for file_path in mkv_files:
-            file_list.write(f"file '{file_path}'\n")
+            abs_path = os.path.abspath(file_path)
+            file_list.write(f"file '{abs_path}'\n")
     return list_file_path
 
 def concat(downloaded, full_video_path):
-    """Concatenate MKV files using FFmpeg."""
-    list_file_path = create_file_list(downloaded)
+    """Concatenate 'trailer.mkv' and a single downloaded MKV file using FFmpeg."""
+    trailer_path = 'trailer.mkv'
+    
+    all_files = [trailer_path, downloaded]
+
+    list_file_path = create_file_list(all_files)
 
     ffmpeg_command = [
         'ffmpeg', '-f', 'concat', '-safe', '0', '-i', list_file_path, '-c', 'copy', full_video_path
     ]
 
-    subprocess.run(ffmpeg_command, check=True)
+    print(f"Running FFmpeg command: {' '.join(ffmpeg_command)}")
+
+    try:
+        subprocess.run(ffmpeg_command, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
 
     os.remove(list_file_path)
     return full_video_path
+
 def seconds_to_subrip_time(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
