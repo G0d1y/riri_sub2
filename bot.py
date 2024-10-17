@@ -59,46 +59,14 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def add_watermark(video_path, output_path, watermark_duration=20):
-    #watermark_text = "بزرگترین کانال دانلود سریال کره ای\n@RiRiKdrama |  ریری کیدراما"
-    #font_path = 'Sahel-Bold.ttf'
-    watermarked_segment_path = 'watermarked_segment.mkv'
-    remaining_part_path = 'remaining_part.mkv'
+def add_watermark(video_path, output_path):
+    trailer_path = 'trailer.mkv'
     concat_file_path = 'concat_list.txt'
 
-    watermark_cmd = [
-    'ffmpeg',
-    '-i', video_path,
-    '-i', 'Watermark.png',
-    '-filter_complex', (
-        f"[1]scale=iw*1:-1[wm];[0][wm]overlay=x=10:y=10"
-    ),
-    '-t', str(watermark_duration),
-    '-c:v', 'libx264',
-    '-crf', '23',
-    '-preset', 'veryslow',
-    '-c:a', 'copy',
-    '-y',
-    watermarked_segment_path 
-    ]
-    subprocess.run(watermark_cmd)
-
-    extract_cmd = [
-        'ffmpeg',
-        '-i', video_path,
-        '-ss', str(watermark_duration),
-        '-c:v', 'copy',
-        '-c:a', 'copy',
-        '-y',
-        remaining_part_path
-    ]
-    subprocess.run(extract_cmd)
-
-    print(watermarked_segment_path, remaining_part_path, output_path)
     
     with open(concat_file_path, 'w') as f:
-        f.write(f"file '{watermarked_segment_path}'\n")
-        f.write(f"file '{remaining_part_path}'\n")
+        f.write(f"file '{trailer_path}'\n")
+        f.write(f"file '{video_path}'\n")
 
     concat_cmd = [
         'ffmpeg',
@@ -112,7 +80,7 @@ def add_watermark(video_path, output_path, watermark_duration=20):
     subprocess.run(concat_cmd)
 
 
-    for file_path in [watermarked_segment_path, remaining_part_path, concat_file_path]:
+    for file_path in [concat_file_path]:
         if os.path.exists(file_path):
             os.remove(file_path)
     return output_path
@@ -124,82 +92,19 @@ def seconds_to_subrip_time(seconds):
     milliseconds = int((seconds - int(seconds)) * 1000)
     return SubRipTime(hours=hours, minutes=minutes, seconds=secs, milliseconds=milliseconds)
 
-def add_custom_subtitles(subtitle_file, custom_subtitle_path):
+def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     subs = pysrt.open(subtitle_file)
+    delay = SubRipTime(seconds=delay_seconds, milliseconds=delay_milliseconds)
+    for sub in subs:
+        sub.start = sub.start + delay
+        sub.end = sub.end + delay
+    shifted_subtitle_file = subtitle_file.replace('.srt', '_shifted.srt')
+    subs.save(shifted_subtitle_file, encoding='utf-8')
+    return shifted_subtitle_file
 
-    # Define custom subtitles
-    custom_subtitles = [
-        {
-            "start": SubRipTime(0, 0, 1, 0),
-            "end": SubRipTime(0, 0, 8, 0),
-            "text": '<font color="#ef6d80">꧁ بزرگترین کانال دانلود سریال کره ای ꧂\n@RiRiKdrama ┊ ریری کیدراما</font>'
-        },
-        {
-            "start": SubRipTime(0, 0, 0, 0),  # Placeholder, will be updated
-            "end": SubRipTime(0, 0, 5, 0),
-            "text": '<font color="#62ffd7">:) لطفا برای حمایت عضو کانال تلگرامی ما بشید\n《 @RiRiKdrama 》</font>'
-        }
-    ]
-
-    # Add the first custom subtitle at the start
-    subs.append(
-        SubRipItem(
-            index=len(subs) + 1,
-            start=custom_subtitles[0]["start"],
-            end=custom_subtitles[0]["end"],
-            text=custom_subtitles[0]["text"]
-        )
-    )
-
-    # Find a place to add the second custom subtitle
-    empty_location_found = False
-    current_time = 0
-    duration = 60  # Assume the video is 60 seconds long
-    subtitle_duration = 5  # Duration of the custom subtitle
-
-    while current_time < duration - subtitle_duration:
-        # Check if there's a 5-second gap without existing subtitles
-        is_empty = True
-        for sub in subs:
-            start_time = seconds_to_subrip_time(current_time)
-            end_time = seconds_to_subrip_time(current_time + subtitle_duration)
-            if sub.start <= end_time and sub.end >= start_time:
-                is_empty = False
-                break
-        
-        if is_empty:
-            # If an empty spot is found, add the second custom subtitle
-            custom_subtitles[1]["start"] = seconds_to_subrip_time(current_time)
-            custom_subtitles[1]["end"] = seconds_to_subrip_time(current_time + subtitle_duration)
-
-            subs.append(
-                SubRipItem(
-                    index=len(subs) + 1,
-                    start=custom_subtitles[1]["start"],
-                    end=custom_subtitles[1]["end"],
-                    text=custom_subtitles[1]["text"]
-                )
-            )
-            empty_location_found = True
-            break
-        
-        current_time += 1  # Check each second
-
-    if not empty_location_found:
-        print("Could not find an empty location for the second custom subtitle.")
-
-    # Sort subtitles by start time to ensure they are in the correct order
-    subs.sort()
-
-    # Write the modified subtitles back to a new file
-    subs.save(custom_subtitle_path, encoding='utf-8')
-    
 def add_soft_subtitle(video_file, subtitle_file, output_file):
-    custom_subtitle_file = 'custom_subtitle.srt'
-    add_custom_subtitles(subtitle_file, custom_subtitle_file)
-
     subprocess.run([
-        'ffmpeg', '-i', video_file, '-i', custom_subtitle_file, '-c', 'copy', '-c:s', 'srt', 
+        'ffmpeg', '-i', video_file, '-i', subtitle_file, '-c', 'copy', '-c:s', 'srt', 
         '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
     ])
 
@@ -221,13 +126,15 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
+    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=20)
+
     processing_start_time = time.time()
     
     watermarked_video_path = f'watermarked_{output_name}.mkv'
-    add_watermark(downloaded, watermarked_video_path , 20)
+    add_watermark(downloaded, watermarked_video_path)
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(watermarked_video_path, output_name + '_subtitle.srt', final_output_path)
+    add_soft_subtitle(watermarked_video_path, shifted_subtitle_file, final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
@@ -235,12 +142,13 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     trimmed_output_path = output_name + '_trimmed.mkv'
     trim_video(final_output_path, trimmed_output_path, duration=90)
-    client.send_document(chat_id, trimmed_output_path , thumb="cover.jpg")
+    client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
+    os.remove(shifted_subtitle_file)
     os.remove(watermarked_video_path)
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
