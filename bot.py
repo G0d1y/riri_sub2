@@ -76,7 +76,7 @@ def concat(downloaded, full_video_path):
     list_file_path = create_file_list(all_files)
 
     ffmpeg_command = [
-        'ffmpeg', '-f', 'concat', '-safe', '0', '-i', list_file_path, '-c', 'copy', full_video_path
+        'ffmpeg', '-f', 'concat', '-safe', '0', '-i', list_file_path, '-c:v', 'libx264', '-c:a', 'aac', '-strict', 'experimental', full_video_path
     ]
 
     print(f"Running FFmpeg command: {' '.join(ffmpeg_command)}")
