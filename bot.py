@@ -126,15 +126,15 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
-    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=20)
+    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
     processing_start_time = time.time()
     
-    watermarked_video_path = f'watermarked_{output_name}.mkv'
-    add_watermark(downloaded, watermarked_video_path)
+    full_video_path = f'full_{output_name}.mkv'
+    add_watermark(downloaded, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(watermarked_video_path, shifted_subtitle_file, final_output_path)
+    add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
@@ -149,7 +149,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
     os.remove(shifted_subtitle_file)
-    os.remove(watermarked_video_path)
+    os.remove(full_video_path)
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
 
