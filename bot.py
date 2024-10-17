@@ -104,13 +104,15 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
-        'ffmpeg', '-i', video_file, '-i', subtitle_file, '-c', 'copy', '-c:s', 'srt', 
-        '-metadata:s:s:0', 'title=@RiRiMovies', '-disposition:s:0', 'default', output_file
+        'ffmpeg', '-err_detect', 'ignore_err', '-i', video_file, '-i', subtitle_file, 
+        '-c', 'copy', '-c:s', 'srt', '-metadata:s:s:0', 'title=@RiRiMovies', 
+        '-disposition:s:0', 'default', output_file
     ])
 
 def trim_video(input_file, output_file, duration=90):
     subprocess.run([
-        'ffmpeg', '-i', input_file, '-t', str(duration), '-c', 'copy', output_file
+        'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file, 
+        '-t', str(duration), '-c', 'copy', output_file
     ])
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
