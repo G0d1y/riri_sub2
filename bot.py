@@ -59,40 +59,32 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def create_file_list(mkv_files, list_file_path='file_list.txt'):
-    """Create a text file that contains the list of MKV files to be concatenated."""
-    with open(list_file_path, 'w') as file_list:
-        for file_path in mkv_files:
-            abs_path = os.path.abspath(file_path)
-            file_list.write(f"file '{abs_path}'\n")
-    return list_file_path
-
-def concat(downloaded, full_video_path):
-    """Concatenate 'trailer.mkv' and a single downloaded MKV file using FFmpeg."""
+def add_watermark(video_path, output_path):
+    print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
+    concat_file_path = 'concat_list.txt'
+
     
-    all_files = [trailer_path, downloaded]
+    with open(concat_file_path, 'w') as f:
+        f.write(f"file '{trailer_path}'\n")
+        f.write(f"file '{video_path}'\n")
 
-    list_file_path = create_file_list(all_files)
-
-    ffmpeg_command = [
+    concat_cmd = [
         'ffmpeg',
-        '-f', 'concat', 
-        '-safe', '0', 
-        '-i', list_file_path, 
-        '-c:a', 'copy',
-        full_video_path
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concat_file_path,
+        '-c', 'copy',
+        '-y',
+        output_path
     ]
+    subprocess.run(concat_cmd)
 
-    print(f"Running FFmpeg command: {' '.join(ffmpeg_command)}")
 
-    try:
-        subprocess.run(ffmpeg_command, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error: {e}")
-
-    os.remove(list_file_path)
-    return full_video_path
+    for file_path in [concat_file_path]:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    return output_path
 
 def seconds_to_subrip_time(seconds):
     hours = int(seconds // 3600)
@@ -139,29 +131,29 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
-    #shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
+    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
     processing_start_time = time.time()
     
     full_video_path = f'full_{output_name}.mkv'
-    concat(downloaded, full_video_path)
+    add_watermark(downloaded, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
-    #add_soft_subtitle(full_video_path, output_name + '_subtitle.srt', final_output_path)
+    add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trim_video(full_video_path, trimmed_output_path, duration=90)
+    trim_video(final_output_path, trimmed_output_path, duration=90)
     client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
-    client.send_document(chat_id, full_video_path, thumb="cover.jpg")
+    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
-    #os.remove(shifted_subtitle_file)
+    os.remove(shifted_subtitle_file)
     os.remove(full_video_path)
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
