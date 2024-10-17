@@ -80,9 +80,6 @@ def concat(downloaded, full_video_path):
         '-f', 'concat', 
         '-safe', '0', 
         '-i', list_file_path, 
-        '-c:v', 'libx264',
-        '-crf', '23',
-        '-preset', 'slow',
         '-c:a', 'copy',
         full_video_path
     ]
