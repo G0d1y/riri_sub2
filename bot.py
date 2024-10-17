@@ -30,7 +30,15 @@ def run_ffmpeg_with_error_check(command, input_file, output_file):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout, stderr = process.communicate()
     
-    if re.search(r"missing picture in access unit", stderr, re.IGNORECASE):
+    error_patterns = [
+        r"missing picture in access unit",
+        r"Invalid NAL unit",
+        r"no frame",
+        r"Invalid data found when processing input",
+        r"channel element \d+\.\d+ is not allocated"
+    ]
+
+    if any(re.search(pattern, stderr, re.IGNORECASE) for pattern in error_patterns):
         print(f"Error detected in {input_file}. Re-encoding...")
         reencode_video(input_file, output_file)
     else:
