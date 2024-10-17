@@ -59,33 +59,25 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def add_watermark(video_path, output_path):
-    print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
-    trailer_path = 'trailer.mkv'
-    concat_file_path = 'concat_list.txt'
+def create_file_list(mkv_files, list_file_path='file_list.txt'):
+    """Create a text file that contains the list of MKV files to be concatenated."""
+    with open(list_file_path, 'w') as file_list:
+        for file_path in mkv_files:
+            file_list.write(f"file '{file_path}'\n")
+    return list_file_path
 
-    
-    with open(concat_file_path, 'w') as f:
-        f.write(f"file '{trailer_path}'\n")
-        f.write(f"file '{video_path}'\n")
+def concat(downloaded, full_video_path):
+    """Concatenate MKV files using FFmpeg."""
+    list_file_path = create_file_list(downloaded)
 
-    concat_cmd = [
-        'ffmpeg',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', concat_file_path,
-        '-c', 'copy',
-        '-y',
-        output_path
+    ffmpeg_command = [
+        'ffmpeg', '-f', 'concat', '-safe', '0', '-i', list_file_path, '-c', 'copy', full_video_path
     ]
-    subprocess.run(concat_cmd)
 
+    subprocess.run(ffmpeg_command, check=True)
 
-    for file_path in [concat_file_path]:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-    return output_path
-
+    os.remove(list_file_path)
+    return full_video_path
 def seconds_to_subrip_time(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
@@ -136,7 +128,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     processing_start_time = time.time()
     
     full_video_path = f'full_{output_name}.mkv'
-    add_watermark(downloaded, full_video_path)
+    concat(downloaded, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
     #add_soft_subtitle(full_video_path, output_name + '_subtitle.srt', final_output_path)
