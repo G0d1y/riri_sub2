@@ -42,7 +42,7 @@ def download_file(url, filename, chat_id, message_id):
             
             if elapsed_time > 0:
                 speed = (downloaded / (1024 * 1024)) / elapsed_time
-                remaining_time = (total_size - downloaded) / (speed * 1024 * 1024)  # seconds
+                remaining_time = (total_size - downloaded) / (speed * 1024 * 1024)
             else:
                 speed = 0
                 remaining_time = float('inf')
@@ -102,7 +102,6 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     subs.save(shifted_subtitle_file, encoding='utf-8')
     return shifted_subtitle_file
 
-
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', video_file, '-i', subtitle_file, 
@@ -129,7 +128,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
-    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
+    #shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
     processing_start_time = time.time()
     
@@ -137,7 +136,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     add_watermark(downloaded, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
+    add_soft_subtitle(full_video_path, output_name + '_subtitle.srt', final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
