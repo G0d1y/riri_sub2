@@ -60,6 +60,7 @@ def download_file(url, filename, chat_id, message_id):
                 last_update_time = current_time
 
 def add_watermark(video_path, output_path):
+    print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
     concat_file_path = 'concat_list.txt'
 
@@ -93,6 +94,7 @@ def seconds_to_subrip_time(seconds):
     return SubRipTime(hours=hours, minutes=minutes, seconds=secs, milliseconds=milliseconds)
 
 def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
+    print("~~~~~~~~ SHIFTING SOFTSUB ~~~~~~~~")
     subs = pysrt.open(subtitle_file)
     delay = SubRipTime(seconds=delay_seconds, milliseconds=delay_milliseconds)
     for sub in subs:
@@ -103,6 +105,7 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     return shifted_subtitle_file
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
+    print("~~~~~~~~ ADDING SOFTSUB ~~~~~~~~")
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', video_file, '-i', subtitle_file, 
         '-c', 'copy', '-c:s', 'srt', '-metadata:s:s:0', 'title=@RiRiMovies', 
@@ -128,7 +131,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
-    #shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
+    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
     processing_start_time = time.time()
     
@@ -136,7 +139,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     add_watermark(downloaded, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(full_video_path, output_name + '_subtitle.srt', final_output_path)
+    add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
