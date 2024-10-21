@@ -62,11 +62,16 @@ def download_file(url, filename, chat_id, message_id):
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
-    concat_file_path = 'concat_list.txt'
+    converted_trailer_path = 'converted_trailer.mkv'
+    
+    width, height, bit_rate, fps = get_video_info(video_path)
 
+    convert_trailer_to_match(trailer_path, converted_trailer_path, width, height, bit_rate, fps)
+    
+    concat_file_path = 'concat_list.txt'
     
     with open(concat_file_path, 'w') as f:
-        f.write(f"file '{trailer_path}'\n")
+        f.write(f"file '{converted_trailer_path}'\n")
         f.write(f"file '{video_path}'\n")
 
     concat_cmd = [
@@ -80,10 +85,10 @@ def add_watermark(video_path, output_path):
     ]
     subprocess.run(concat_cmd)
 
-
-    for file_path in [concat_file_path]:
+    for file_path in [concat_file_path, converted_trailer_path]:
         if os.path.exists(file_path):
             os.remove(file_path)
+    
     return output_path
 
 def seconds_to_subrip_time(seconds):
@@ -116,6 +121,31 @@ def trim_video(input_file, output_file, duration=90):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file, 
         '-t', str(duration), '-c', 'copy', output_file
+    ])
+
+def get_video_info(video_file):
+    probe = subprocess.run(
+        ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate,bit_rate', '-of', 'json', video_file],
+        capture_output=True,
+        text=True
+    )
+    video_info = json.loads(probe.stdout)
+    width = video_info['streams'][0]['width']
+    height = video_info['streams'][0]['height']
+    bit_rate = int(video_info['streams'][0]['bit_rate'])  # in bits
+    fps = eval(video_info['streams'][0]['r_frame_rate'])  # convert '30000/1001' to float
+    return width, height, bit_rate, fps
+
+def convert_trailer_to_match(trailer_path, output_path, width, height, bit_rate, fps):
+    print(f"Converting trailer to {width}x{height} @ {fps}fps with {bit_rate/1000} kbps")
+    
+    subprocess.run([
+        'ffmpeg', '-i', trailer_path, 
+        '-vf', f'scale={width}:{height}',
+        '-b:v', f'{bit_rate}',
+        '-r', f'{fps}',
+        '-c:a', 'copy',
+        '-y', output_path
     ])
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
