@@ -183,7 +183,7 @@ def trim_video(input_file, output_file, duration=90):
         '-t', str(duration), '-c', 'copy', output_file
     ])
 
-def trim_video_low_quality(input_file, output_file, duration=90, target_size_mb=2):
+def trim_video_low_quality(input_file, output_file, duration=90, target_size_mb=3):
     target_bitrate = (target_size_mb * 8 * 1024 * 1024) / duration 
     target_bitrate_str = f'{int(target_bitrate)}'
 
@@ -248,11 +248,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     trimmed_output_path = output_name + '_trimmed.mkv'
     trimmed_Low_output_path = output_name + '_trimmed_low_quality.mkv'
-    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
-    trim_video(final_output_path, trimmed_output_path, duration=90, target_size_mb=3)
-    client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
     trim_video_low_quality(final_output_path, trimmed_Low_output_path, duration=90, target_size_mb=3)
     client.send_document(chat_id, trimmed_Low_output_path, thumb="cover.jpg")
+    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+    trim_video(final_output_path, trimmed_output_path, duration=90)
+    client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
