@@ -188,7 +188,7 @@ def trim_video(input_file, output_file , output_file2, duration=90):
         '-i', output_file,
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', "32",
+        '-crf', "50",
         output_file2
     ])
 
@@ -247,11 +247,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     #trimed
-    trimmed_output_path = output_name + '_trimmed.mkv'
-    trimmed_low_quality_output_path = output_name + '_trimmed_low_quality.mkv'
+    trimmed_output_path = '_trimmed.mkv'
+    trimmed_low_quality_output_path = '_trimmed_low_quality.mkv'
     trim_video(final_output_path, trimmed_output_path , trimmed_low_quality_output_path , duration=90)
-    client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
-    client.send_document(chat_id, trimmed_low_quality_output_path, thumb="cover.jpg")
+    client.send_document(chat_id, trimmed_output_path, caption= output_name + '_trimmed_low_quality.mkv', thumb="cover.jpg")
+    client.send_document(chat_id, trimmed_low_quality_output_path, output_name + '_trimmed.mkv', thumb="cover.jpg")
     #trimed
 
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
