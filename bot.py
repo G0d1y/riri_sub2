@@ -177,23 +177,10 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
         '-disposition:s:0', 'default', output_file
     ])
 
-def trim_video(input_file, output_file , output_file2, duration=90):
+def trim_video(input_file, output_file, duration=90):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file, 
         '-t', str(duration), '-c', 'copy', output_file
-    ])
-    
-    subprocess.run([
-        'ffmpeg',
-        '-i', input_file,
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '50',
-        '-c:a', 'aac',
-        '-b:a', '64k',
-        '-threads', '0', 
-        '-movflags', '+faststart',
-        output_file
     ])
 
 def get_video_info(video_file):
@@ -250,13 +237,9 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     processing_time = processing_end_time - processing_start_time
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
-    #trimed
     trimmed_output_path = '_trimmed.mkv'
-    trimmed_low_quality_output_path = '_trimmed_low_quality.mkv'
-    trim_video(final_output_path, trimmed_output_path , trimmed_low_quality_output_path , duration=90)
+    trim_video(final_output_path, trimmed_output_path, duration=90)
     client.send_document(chat_id, trimmed_output_path, caption= output_name + "\n" + "\n" + 'trimmed.mkv', thumb="cover.jpg")
-    client.send_document(chat_id, trimmed_low_quality_output_path, caption= output_name + "\n" + "\n" + 'trimmed_low_quality.mkv', thumb="cover.jpg")
-    #trimed
 
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
