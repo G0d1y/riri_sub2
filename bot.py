@@ -177,19 +177,21 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
         '-disposition:s:0', 'default', output_file
     ])
 
-def trim_video(input_file, output_file, duration=90):
+def trim_video(input_file, output_file , output_file2, duration=90):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file, 
         '-t', str(duration), '-c', 'copy', output_file
     ])
-
-def trim_video_low_quality(input_file, output_file, duration=90, target_size_mb=3):
-    target_bitrate = (target_size_mb * 8 * 1024 * 1024) / duration 
-    target_bitrate_str = f'{int(target_bitrate)}'
-
+    
     subprocess.run([
-        'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file,
-        '-t', str(duration), '-b:v', target_bitrate_str, '-c:a', 'aac', '-b:a', '128k', output_file
+        'ffmpeg',
+        '-i', output_file,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-crf', "32"
+        '-c:a', 'aac', 
+        '-b:a', '128k', 
+        output_file2
     ])
 
 def get_video_info(video_file):
@@ -246,13 +248,15 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     processing_time = processing_end_time - processing_start_time
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
+    #trimed
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trimmed_Low_output_path = output_name + '_trimmed_low_quality.mkv'
-    trim_video_low_quality(final_output_path, trimmed_Low_output_path, duration=90, target_size_mb=3)
-    client.send_document(chat_id, trimmed_Low_output_path, thumb="cover.jpg")
-    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+    trimmed_low_quality_output_path = output_name + '_trimmed_low_quality.mkv'
     trim_video(final_output_path, trimmed_output_path, duration=90)
     client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
+    client.send_document(chat_id, trimmed_low_quality_output_path, thumb="cover.jpg")
+    #trimed
+
+    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
@@ -271,8 +275,7 @@ def remove_files(client , chatId):
         if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
             file_path = os.path.join(directory, filename)
             os.remove(file_path)
-            client.send_message(chatId, f'Removed: {file_path}')
-    client.send_message(chatId, "فایل های موجود حذف شدند")
+    client.send_message(chatId, "فایل های قبلی حذف شدند")
 
 
 @app.on_message(filters.command("start"))
