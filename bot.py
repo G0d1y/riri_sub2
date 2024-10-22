@@ -187,9 +187,10 @@ def trim_video(input_file, output_file , output_file2, duration=90):
         'ffmpeg',
         '-i', output_file,
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', "50",
+        '-preset', 'superfast',
+        '-crf', '30',
         '-threads', '0',
+        '-tune', 'fastdecode',
         output_file2
     ])
 
