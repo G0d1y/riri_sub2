@@ -64,11 +64,11 @@ def create_ts_file(input_video, output_file):
     if os.path.exists(input_video):
         try:
             cmd = [
-                'ffmpeg', '-i', input_video, '-c', 'copy',
-                '-bsf:v', 'h264_mp4toannexb', '-f', 'mpegts', output_file
+                'ffmpeg', '-i', input_video, '-c', 'copy',  # Use copy for both audio and video
+                '-f', 'mpegts', output_file
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(result.stderr.decode())
+            print(result.stderr.decode())  # Log any errors
             if result.returncode != 0:
                 print(f"Failed to create {output_file}: {result.stderr.decode()}")
         except Exception as e:
@@ -88,7 +88,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c:v', 'copy', '-c:a', 'aac', final_output
+                '-c', 'copy', '-threads', '6', final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
@@ -103,6 +103,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             print(f"Error: {trailer_ts} not found.")
 
 def process_videos(downloaded_video, trailer_video, final_output):
+    """Process videos to create and concatenate them."""
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
 
@@ -117,7 +118,6 @@ def process_videos(downloaded_video, trailer_video, final_output):
         print("Cleanup: Deleted temporary files.")
     except Exception as e:
         print(f"Error during cleanup: {e}")
-
 
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
