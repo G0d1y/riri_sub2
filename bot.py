@@ -59,13 +59,73 @@ def download_file(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
+def create_ts_file(input_video, output_file):
+    """Create .ts file from the input video."""
+    if os.path.exists(input_video):
+        try:
+            cmd = [
+                'ffmpeg', '-i', input_video, '-c', 'copy',
+                '-bsf:v', 'h264_mp4toannexb', '-f', 'mpegts', output_file
+            ]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(result.stderr.decode())
+            if result.returncode != 0:
+                print(f"Failed to create {output_file}: {result.stderr.decode()}")
+        except Exception as e:
+            print(f"Error running FFmpeg for {output_file}: {e}")
+    else:
+        print(f"Error: {input_video} not found.")
+
+def concat_videos(trailer_ts, downloaded_ts, final_output):
+    """Concatenate trailer.ts and downloaded.ts into final_output."""
+    if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
+        try:
+            with open('concat_list.txt', 'w') as f:
+                f.write(f"file '{trailer_ts}'\n")
+                f.write(f"file '{downloaded_ts}'\n")
+            print("Concat list created:")
+            print(open('concat_list.txt').read())
+
+            cmd = [
+                'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
+                '-c:v', 'copy', '-c:a', 'aac', final_output
+            ]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(result.stderr.decode())
+            if result.returncode != 0:
+                print(f"Failed to concatenate videos: {result.stderr.decode()}")
+        except Exception as e:
+            print(f"Error concatenating videos: {e}")
+    else:
+        if not os.path.exists(downloaded_ts):
+            print(f"Error: {downloaded_ts} not found.")
+        if not os.path.exists(trailer_ts):
+            print(f"Error: {trailer_ts} not found.")
+
+def process_videos(downloaded_video, trailer_video, final_output):
+    trailer_ts = 'trailer.ts'
+    downloaded_ts = 'downloaded.ts'
+
+    create_ts_file(trailer_video, trailer_ts)
+    create_ts_file(downloaded_video, downloaded_ts)
+    concat_videos(trailer_ts, downloaded_ts, final_output)
+
+    try:
+        os.remove(trailer_ts)
+        os.remove(downloaded_ts)
+        os.remove('concat_list.txt')
+        print("Cleanup: Deleted temporary files.")
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
+
+
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
     converted_trailer_path = 'converted_trailer.mkv'
     
     width, height, bit_rate, fps = get_video_info(video_path)
-
+    print(width , height , bit_rate , fps)
     convert_trailer_to_match(trailer_path, converted_trailer_path, width, height, bit_rate, fps)
     
     concat_file_path = 'concat_list.txt'
@@ -166,7 +226,9 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     processing_start_time = time.time()
     
     full_video_path = f'full_{output_name}.mkv'
-    add_watermark(downloaded, full_video_path)
+    trailer_video = 'trailer.mkv'
+
+    process_videos(downloaded, trailer_video, full_video_path)
 
     final_output_path = f'{output_name}.mkv'
     add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
