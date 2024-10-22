@@ -88,7 +88,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c', 'copy', '-threads', '6', final_output
+                '-c', 'copy' , final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
@@ -183,6 +183,15 @@ def trim_video(input_file, output_file, duration=90):
         '-t', str(duration), '-c', 'copy', output_file
     ])
 
+def trim_video_low_quality(input_file, output_file, duration=90, target_size_mb=2):
+    target_bitrate = (target_size_mb * 8 * 1024 * 1024) / duration 
+    target_bitrate_str = f'{int(target_bitrate)}'
+
+    subprocess.run([
+        'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file,
+        '-t', str(duration), '-b:v', target_bitrate_str, '-c:a', 'aac', '-b:a', '128k', output_file
+    ])
+
 def get_video_info(video_file):
     probe = subprocess.run(
         ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate,bit_rate', '-of', 'json', video_file],
@@ -238,9 +247,12 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
     trimmed_output_path = output_name + '_trimmed.mkv'
-    trim_video(final_output_path, trimmed_output_path, duration=90)
-    client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
+    trimmed_Low_output_path = output_name + '_trimmed_low_quality.mkv'
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+    trim_video(final_output_path, trimmed_output_path, duration=90, target_size_mb=3)
+    client.send_document(chat_id, trimmed_output_path, thumb="cover.jpg")
+    trim_video_low_quality(final_output_path, trimmed_Low_output_path, duration=90, target_size_mb=3)
+    client.send_document(chat_id, trimmed_Low_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
     os.remove(downloaded)
