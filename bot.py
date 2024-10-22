@@ -188,9 +188,7 @@ def trim_video(input_file, output_file , output_file2, duration=90):
         '-i', output_file,
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', "32"
-        '-c:a', 'aac', 
-        '-b:a', '128k', 
+        '-crf', "32",
         output_file2
     ])
 
