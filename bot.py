@@ -262,6 +262,19 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
 
+def remove_files(client , chatId):
+    exclude_files = {'trailer.mkv'}
+
+    directory = os.getcwd()
+
+    for filename in os.listdir(directory):
+        if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
+            file_path = os.path.join(directory, filename)
+            os.remove(file_path)
+            client.send_message(chatId, f'Removed: {file_path}')
+    client.send_message(chatId, "فایل های موجود حذف شدند")
+
+
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
     global video_tasks
@@ -292,6 +305,7 @@ def collect_links(client, message):
                 video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
 
     if not video_queue.empty():
+        remove_files(client , message.chat.id)
         client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
 def process_video_queue():
