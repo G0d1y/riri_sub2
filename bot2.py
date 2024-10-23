@@ -16,7 +16,7 @@ api_hash = config['api_hash']
 bot_token = config['bot_token']
 
 app = Client(
-    "bot",
+    "bot2",
     api_id=api_id,
     api_hash=api_hash,
     bot_token=bot_token
