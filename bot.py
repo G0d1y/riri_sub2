@@ -62,7 +62,7 @@ async def download_document(client, document, file_name, chat_id):
             remaining_time = float('inf')
 
         # Update the progress message every second
-        if int(current / (total / 100)) % 2 == 0:  # Update at every 1% completion
+        if int(current / (total / 100)) % 5 == 0:  # Update at every 1% completion
             message_content = (
                 f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
                 f"سرعت: {speed:.2f} MB/s\n"
