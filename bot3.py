@@ -228,7 +228,6 @@ def create_ts_file(input_video, output_file):
         print(f"Error: {input_video} not found.")
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
-    """Concatenate trailer.ts and downloaded.ts into final_output."""
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
             with open('concat_list.txt', 'w') as f:
@@ -245,8 +244,11 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
                 '-c:v', 'libx264',
                 '-preset' 'slow',
                 '-crf', '23',
-                '-y',
                 final_output
+            ]
+            cmd = [
+                'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
+                '-c', 'copy' , final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
@@ -261,7 +263,6 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             print(f"Error: {trailer_ts} not found.")
 
 def process_videos(downloaded_video, trailer_video, final_output):
-    """Process videos to create and concatenate them."""
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
 
