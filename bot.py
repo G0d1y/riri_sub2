@@ -122,7 +122,7 @@ def process_videos(downloaded_video, trailer_video, final_output):
 
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
-    trailer_path = 'trailer2.mkv'
+    trailer_path = 'trailer.mkv'
 
     concat_file_path = 'concat_list.txt'
     
@@ -195,7 +195,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
 
-    process_videos(downloaded, 'trailer2.mkv', output_path)
+    process_videos(downloaded, 'trailer.mkv', output_path)
 
     processing_start_time = time.time()
 
@@ -220,7 +220,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
 
-def remove_files(client , chatId):
+@app.on_message(filters.command("start"))
+def remove_files(client , message):
     exclude_files = {'trailer.mkv'}
 
     directory = os.getcwd()
@@ -229,7 +230,7 @@ def remove_files(client , chatId):
         if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
             file_path = os.path.join(directory, filename)
             os.remove(file_path)
-    client.send_message(chatId, "فایل های قبلی حذف شدند")
+    client.send_message(message.chat.id, "فایل های قبلی حذف شدند")
 
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
@@ -261,7 +262,6 @@ def collect_links(client, message):
                 video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
 
     if not video_queue.empty():
-        remove_files(client , message.chat.id)
         client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
 def process_video_queue():
