@@ -25,6 +25,7 @@ video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
 user_state = {}
+DOWNLOAD_DIRECTORY = "./"
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
     exclude_files = {'trailer.mkv'}
@@ -37,9 +38,14 @@ def remove_files(client , message):
             os.remove(file_path)
     client.send_message(message.chat.id, "فایل های قبلی حذف شدند")
 
-async def download_document(client, document, download_path):
-    await client.download_media(document, download_path)
-    return download_path
+async def download_document(client, document, file_name):
+    file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name) 
+    try:
+        await client.download_media(document, file_path)
+        return file_path
+    except Exception as e:
+        print(f"Error downloading file: {e}")
+        return None
 
 async def process_video_with_files(video_file, subtitle_file, output_name, client, chat_id):
     output_path = output_name + '.mkv'
@@ -78,7 +84,6 @@ async def handle_document(client, message):
         video_file = await download_document(client, document, "video.mkv")
         await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
 
-        # Set user state to waiting for subtitle file
         user_state[message.chat.id] = {"video_file": video_file, "step": "waiting_for_subtitle"}
         return
 
@@ -87,11 +92,10 @@ async def handle_document(client, message):
         video_file = user_state[message.chat.id]["video_file"]
         await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
 
-        # Update user state to waiting for output name
         user_state[message.chat.id]["subtitle_file"] = subtitle_file
         user_state[message.chat.id]["step"] = "waiting_for_output_name"
         return
-
+    
 @app.on_message(filters.text)
 async def handle_output_name(client, message):
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
@@ -116,7 +120,6 @@ async def handle_output_name(client, message):
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else:
         await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو و زیرنویس ارسال کنید.")
-
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
