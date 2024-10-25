@@ -96,31 +96,21 @@ async def handle_document(client, message):
 async def handle_output_name(client, message):
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
         output_name = message.text.strip()
-        if output_name:  # Ensure the output name is not empty
-            # Retrieve the original file paths
+        if output_name:
             original_video_file = user_state[message.chat.id]["video_file"]  # e.g., "video.mkv"
             original_subtitle_file = user_state[message.chat.id]["subtitle_file"]  # e.g., "subtitle.srt"
 
-            # Construct new file names
-            new_video_file = f"downloaded_{output_name}.mkv"  # e.g., "downloaded_output_name.mkv"
-            new_subtitle_file = f"{output_name}_subtitle.srt"  # e.g., "output_name_subtitle.srt"
+            new_video_file = f"downloaded_{output_name}.mkv" 
+            new_subtitle_file = f"{output_name}_subtitle.srt"
 
-            # Rename the video file
             if os.path.exists(original_video_file):
                 os.rename(original_video_file, new_video_file)
 
-            # Rename the subtitle file
             if os.path.exists(original_subtitle_file):
                 os.rename(original_subtitle_file, new_subtitle_file)
-
-            # Update user state with new file names
-            user_state[message.chat.id]["video_file"] = new_video_file
-            user_state[message.chat.id]["subtitle_file"] = new_subtitle_file
-
-            # Process video with files
+            print(original_video_file , new_video_file + " <==========>" + original_subtitle_file , new_subtitle_file)
             await process_video_with_files(new_video_file, new_subtitle_file, output_name, client, message.chat.id)
 
-            # Clear user state after processing
             del user_state[message.chat.id]
         else:
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
