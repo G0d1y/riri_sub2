@@ -123,16 +123,11 @@ def process_videos(downloaded_video, trailer_video, final_output):
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
-    converted_trailer_path = 'converted_trailer.mkv'
-    
-    width, height, bit_rate, fps = get_video_info(video_path)
-    print(width , height , bit_rate , fps)
-    convert_trailer_to_match(trailer_path, converted_trailer_path, width, height, bit_rate, fps)
-    
+
     concat_file_path = 'concat_list.txt'
     
     with open(concat_file_path, 'w') as f:
-        f.write(f"file '{converted_trailer_path}'\n")
+        f.write(f"file '{trailer_path}'\n")
         f.write(f"file '{video_path}'\n")
 
     concat_cmd = [
@@ -146,7 +141,7 @@ def add_watermark(video_path, output_path):
     ]
     subprocess.run(concat_cmd)
 
-    for file_path in [concat_file_path, converted_trailer_path]:
+    for file_path in [concat_file_path]:
         if os.path.exists(file_path):
             os.remove(file_path)
     
@@ -184,35 +179,6 @@ def trim_video(input_file, output_file, duration=90):
         '-t', str(duration), '-c', 'copy', output_file
     ])
 
-def get_video_info(video_file):
-    probe = subprocess.run(
-        ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate,bit_rate', '-of', 'json', video_file],
-        capture_output=True,
-        text=True
-    )
-    video_info = json.loads(probe.stdout)
-    width = video_info['streams'][0]['width']
-    height = video_info['streams'][0]['height']
-    bit_rate = int(video_info['streams'][0]['bit_rate'])
-    fps = eval(video_info['streams'][0]['r_frame_rate'])
-    return width, height, bit_rate, fps
-
-def convert_trailer_to_match(trailer_path, output_path, width, height, bit_rate, fps):
-    print(f"Converting trailer to match properties: {width}x{height} @ {fps}fps with {bit_rate/1000} kbps")
-    
-    subprocess.run([
-        'ffmpeg', '-i', trailer_path, 
-        '-vf', f'scale={width}:{height}',
-        '-b:v', f'{bit_rate}',
-        '-r', f'{fps}',
-        '-c:v', 'libx264',
-        '-pix_fmt', 'yuv420p',
-        '-crf', 'slow'
-        '-c:a', 'aac',
-        '-strict', 'experimental',
-        '-y', output_path
-    ], check=True)
-
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
         client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
@@ -230,13 +196,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     processing_start_time = time.time()
 
-    width, height, bit_rate, fps = get_video_info(downloaded)
-    print("Downloaded video info:", width, height, bit_rate, fps)
-
-    converted_trailer_path = 'converted_trailer.mkv'
-    convert_trailer_to_match('trailer.mkv', converted_trailer_path, width, height, bit_rate, fps)
-
-    process_videos(downloaded, converted_trailer_path, output_path)
+    process_videos(downloaded, 'trailer.mkv', output_path)
 
     final_output_path = f'{output_name}.mkv'
     add_soft_subtitle(output_path, shifted_subtitle_file, final_output_path)
@@ -258,7 +218,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(output_path)
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
-    os.remove(converted_trailer_path)
 
 def remove_files(client , chatId):
     exclude_files = {'trailer.mkv'}
