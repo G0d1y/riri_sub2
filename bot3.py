@@ -210,14 +210,11 @@ def download_file(url, filename, chat_id, message_id):
                 last_update_time = current_time
 
 def create_ts_file(input_video, output_file):
-    """Create .ts file from the input video with re-encoding."""
+    """Create .ts file from the input video."""
     if os.path.exists(input_video):
         try:
             cmd = [
-                'ffmpeg', '-i', input_video, 
-                '-c:v', 'libx264',
-                '-c:a', 'aac', 
-                '-b:a', '320k',
+                'ffmpeg', '-i', input_video, '-c', 'copy',
                 '-f', 'mpegts', output_file
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -227,6 +224,7 @@ def create_ts_file(input_video, output_file):
         except Exception as e:
             print(f"Error running FFmpeg for {output_file}: {e}")
     else:
+        
         print(f"Error: {input_video} not found.")
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
@@ -240,7 +238,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c', 'copy' , final_output
+                '-c:v', 'libx264', final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
