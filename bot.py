@@ -140,10 +140,12 @@ def add_watermark(video_path, output_path):
         output_path
     ]
     subprocess.run(concat_cmd)
+    exclude_files = {'trailer.mkv'}
 
     for file_path in [concat_file_path]:
         if os.path.exists(file_path):
-            os.remove(file_path)
+            if file_path not in exclude_files:
+                os.remove(file_path)
     
     return output_path
 
