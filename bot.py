@@ -82,6 +82,8 @@ async def handle_document(client, message):
         user_state[message.chat.id]["step"] = "waiting_for_output_name"
         return
 
+@app.on_message(filters.text)
+async def handle_output_name(client, message):
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
         output_name = message.text.strip()
         if output_name:  # Ensure the output name is not empty
@@ -97,6 +99,8 @@ async def handle_document(client, message):
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else:
         await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو و زیرنویس ارسال کنید.")
+
+
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
