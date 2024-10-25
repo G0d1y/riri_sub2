@@ -148,7 +148,7 @@ async def handle_output_name(client, message):
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else: 
         if message.chat.id not in admins:
-            client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
+            await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
             return
         tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
@@ -162,7 +162,7 @@ async def handle_output_name(client, message):
                     video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
 
         if not video_queue.empty():
-            client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
+            await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
