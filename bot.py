@@ -300,9 +300,15 @@ def collect_links(client, message):
 
 def process_video_queue():
     while True:
-        video_link, subtitle_link, output_name, client, chat_id = video_queue.get()
-        process_video_with_links(video_link, subtitle_link, client, chat_id, output_name)
-        video_queue.task_done()
+        try:
+            video_link, subtitle_link, output_name, client, chat_id = video_queue.get(timeout=10)
+            process_video_with_links(video_link, subtitle_link, client, chat_id, output_name)
+            video_queue.task_done()
+        except queue.Empty:
+            continue
+        except Exception as e:
+            print(f"Error in processing video: {e}")
+            continue
 
 threading.Thread(target=process_video_queue, daemon=True).start()
 
