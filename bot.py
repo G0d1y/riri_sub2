@@ -219,6 +219,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         return
 
     output_path = output_name + '.mkv'
+    full_output =  f'full_{output_path}'
     message = client.send_message(chat_id, f"در حال پردازش: {output_path}...")
     message_id = message.id
 
@@ -228,12 +229,12 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
-    process_videos(downloaded, 'trailer.mkv', output_path)
+    process_videos(downloaded, 'trailer.mkv', full_output)
 
     processing_start_time = time.time()
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(output_path, shifted_subtitle_file, final_output_path)
+    add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
