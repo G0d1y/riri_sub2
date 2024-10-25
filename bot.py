@@ -122,7 +122,7 @@ def process_videos(downloaded_video, trailer_video, final_output):
 
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
-    trailer_path = 'trailer.mkv'
+    trailer_path = 'trailer2.mkv'
 
     concat_file_path = 'concat_list.txt'
     
@@ -195,7 +195,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
 
-    process_videos(downloaded, 'trailer.mkv', output_path)
+    process_videos(downloaded, 'trailer2.mkv', output_path)
 
     processing_start_time = time.time()
 
