@@ -38,15 +38,42 @@ def remove_files(client , message):
             os.remove(file_path)
     client.send_message(message.chat.id, "فایل های قبلی حذف شدند")
 
-async def download_document(client, document, file_name):
+async def download_document(client, document, file_name, chat_id):
     file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name) 
+    
+    total_size = int(document.file_size) if document.file_size else 0
+    downloaded = 0
+    start_time = time.time()
+    
+    async def progress(current, total):
+        nonlocal downloaded
+        downloaded = current
+        current_time = time.time()
+        elapsed_time = current_time - start_time
+        
+        if elapsed_time > 0:
+            speed = (downloaded / (1024 * 1024)) / elapsed_time  # MB/s
+            remaining_time = (total_size - downloaded) / (speed * 1024 * 1024) if speed > 0 else float('inf')
+        else:
+            speed = 0
+            remaining_time = float('inf')
+
+        # Update message every second
+        if int(current / (total / 100)) % 1 == 0:  # Updates every 1%
+            message_content = (
+                f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
+                f"سرعت: {speed:.2f} MB/s\n"
+                f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
+            )
+            await client.send_message(chat_id, message_content)  # Send or edit your progress message here
+    
     try:
-        await client.download_media(document, file_path)
+        await client.download_media(document, file_path, progress=progress)
         return file_path
     except Exception as e:
         print(f"Error downloading file: {e}")
         return None
-
+    
 async def process_video_with_files(video_file, subtitle_file, output_name, client, chat_id):
     output_path = output_name + '.mkv'
     full_output = f'full_{output_path}'
@@ -65,7 +92,6 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     await client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     await client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
-    # Clean up files after processing
     os.remove(video_file)
     os.remove(subtitle_file)
     os.remove(shifted_subtitle_file)
@@ -101,8 +127,8 @@ async def handle_output_name(client, message):
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
         output_name = message.text.strip()
         if output_name:
-            original_video_file = user_state[message.chat.id]["video_file"]  # e.g., "video.mkv"
-            original_subtitle_file = user_state[message.chat.id]["subtitle_file"]  # e.g., "subtitle.srt"
+            original_video_file = user_state[message.chat.id]["video_file"]
+            original_subtitle_file = user_state[message.chat.id]["subtitle_file"]
 
             new_video_file = f"downloaded_{output_name}.mkv" 
             new_subtitle_file = f"{output_name}_subtitle.srt"
