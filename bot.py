@@ -66,14 +66,16 @@ async def handle_document(client, message):
     document = message.document
     if document.mime_type in ["video/x-matroska", "video/mp4"]:
         video_file = await download_document(client, document, "video.mkv")
-        await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
+        await client.send_message(message.chat.id, "لطفاً فایل زیرنویس را ارسال کنید.")
 
         # Set user state to waiting for subtitle file
         user_state[message.chat.id] = {"video_file": video_file, "step": "waiting_for_subtitle"}
         return
 
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_subtitle":
-        subtitle_file = await download_document(client, document, "subtitle.srt")
+        # Download subtitle with original name
+        subtitle_filename = document.file_name  # Get the original file name
+        subtitle_file = await download_document(client, document, subtitle_filename)
         video_file = user_state[message.chat.id]["video_file"]
         await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
 
@@ -99,7 +101,6 @@ async def handle_output_name(client, message):
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else:
         await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو و زیرنویس ارسال کنید.")
-
 
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
