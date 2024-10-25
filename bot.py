@@ -25,6 +25,17 @@ video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
 
+def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
+    try:
+        command = [
+            'ffmpeg', '-i', trailer_path, '-r', str(target_fps), '-c:v', 'libx264', 
+            '-preset', 'slow', '-crf', '18', '-c:a', 'copy' , output_trailer_path
+        ]
+        subprocess.run(command, check=True)
+        print(f"Trailer re-encoded to match FPS ({target_fps}).")
+    except subprocess.CalledProcessError as e:
+        print(f"Error re-encoding trailer: {e}")
+
 def download_file(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
@@ -120,14 +131,36 @@ def process_videos(downloaded_video, trailer_video, final_output):
     except Exception as e:
         print(f"Error during cleanup: {e}")
 
+def get_video_fps(video_path):
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,bit_rate,r_frame_rate', '-of', 'json', video_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        video_info = json.loads(result.stdout)
+
+        if 'streams' not in video_info or len(video_info['streams']) == 0:
+            raise ValueError(f"Video stream info not found in {video_path}. Please check if the file is a valid video.")
+        fps_str = video_info['streams'][0].get('r_frame_rate', '0/1')
+        fps = eval(fps_str) if fps_str else 0
+
+        return fps
+
+    except Exception as e:
+        print(f"Error getting video info: {e}")
+        return None, None, None, None
+    
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
+    output_trailer_path = 'ConvertedTrailer.mkv'
+    target_fps = get_video_fps(video_path)
+    re_encode_trailer(trailer_path, output_trailer_path, target_fps)
 
     concat_file_path = 'concat_list.txt'
     
     with open(concat_file_path, 'w') as f:
-        f.write(f"file '{trailer_path}'\n")
+        f.write(f"file '{output_trailer_path}'\n")
         f.write(f"file '{video_path}'\n")
 
     concat_cmd = [
@@ -144,7 +177,6 @@ def add_watermark(video_path, output_path):
 
     for file_path in [concat_file_path]:
         if os.path.exists(file_path):
-            if file_path not in exclude_files:
                 os.remove(file_path)
     
     return output_path
@@ -195,7 +227,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
-
 
     process_videos(downloaded, 'trailer.mkv', output_path)
 
