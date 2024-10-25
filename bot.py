@@ -44,7 +44,10 @@ async def download_document(client, document, file_name, chat_id):
     total_size = int(document.file_size) if document.file_size else 0
     downloaded = 0
     start_time = time.time()
-    
+
+    # Send an initial message for progress updates
+    progress_message = await client.send_message(chat_id, "دانلود آغاز شد...")
+
     async def progress(current, total):
         nonlocal downloaded
         downloaded = current
@@ -58,17 +61,19 @@ async def download_document(client, document, file_name, chat_id):
             speed = 0
             remaining_time = float('inf')
 
-        # Update message every second
-        if int(current / (total / 100)) % 1 == 0:  # Updates every 1%
+        # Update the progress message every second
+        if int(current / (total / 100)) % 1 == 0:  # Update at every 1% completion
             message_content = (
                 f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
                 f"سرعت: {speed:.2f} MB/s\n"
                 f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
             )
-            await client.send_message(chat_id, message_content)  # Send or edit your progress message here
+            await client.edit_message_text(progress_message.chat.id, progress_message.id, message_content)
     
     try:
         await client.download_media(document, file_path, progress=progress)
+        # Final message after download completion
+        await client.edit_message_text(progress_message.chat.id, progress_message.id, "دانلود کامل شد!")
         return file_path
     except Exception as e:
         print(f"Error downloading file: {e}")
