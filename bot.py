@@ -74,6 +74,7 @@ def create_ts_file(input_video, output_file):
         except Exception as e:
             print(f"Error running FFmpeg for {output_file}: {e}")
     else:
+        
         print(f"Error: {input_video} not found.")
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
@@ -192,21 +193,25 @@ def get_video_info(video_file):
     video_info = json.loads(probe.stdout)
     width = video_info['streams'][0]['width']
     height = video_info['streams'][0]['height']
-    bit_rate = int(video_info['streams'][0]['bit_rate'])  # in bits
-    fps = eval(video_info['streams'][0]['r_frame_rate'])  # convert '30000/1001' to float
+    bit_rate = int(video_info['streams'][0]['bit_rate'])
+    fps = eval(video_info['streams'][0]['r_frame_rate'])
     return width, height, bit_rate, fps
 
 def convert_trailer_to_match(trailer_path, output_path, width, height, bit_rate, fps):
-    print(f"Converting trailer to {width}x{height} @ {fps}fps with {bit_rate/1000} kbps")
+    print(f"Converting trailer to match properties: {width}x{height} @ {fps}fps with {bit_rate/1000} kbps")
     
     subprocess.run([
         'ffmpeg', '-i', trailer_path, 
         '-vf', f'scale={width}:{height}',
         '-b:v', f'{bit_rate}',
         '-r', f'{fps}',
-        '-c:a', 'copy',
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-crf', 'slow'
+        '-c:a', 'aac',
+        '-strict', 'experimental',
         '-y', output_path
-    ])
+    ], check=True)
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
@@ -224,14 +229,17 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
     processing_start_time = time.time()
-    
-    full_video_path = f'full_{output_name}.mkv'
-    trailer_video = 'trailer.mkv'
 
-    process_videos(downloaded, trailer_video, full_video_path)
+    width, height, bit_rate, fps = get_video_info(downloaded)
+    print("Downloaded video info:", width, height, bit_rate, fps)
+
+    converted_trailer_path = 'converted_trailer.mkv'
+    convert_trailer_to_match('trailer.mkv', converted_trailer_path, width, height, bit_rate, fps)
+
+    process_videos(downloaded, converted_trailer_path, output_path)
 
     final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(full_video_path, shifted_subtitle_file, final_output_path)
+    add_soft_subtitle(output_path, shifted_subtitle_file, final_output_path)
 
     processing_end_time = time.time()
     processing_time = processing_end_time - processing_start_time
@@ -247,9 +255,10 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
     os.remove(shifted_subtitle_file)
-    os.remove(full_video_path)
+    os.remove(output_path)
     os.remove(final_output_path)
     os.remove(trimmed_output_path)
+    os.remove(converted_trailer_path)
 
 def remove_files(client , chatId):
     exclude_files = {'trailer.mkv'}
@@ -261,7 +270,6 @@ def remove_files(client , chatId):
             file_path = os.path.join(directory, filename)
             os.remove(file_path)
     client.send_message(chatId, "فایل های قبلی حذف شدند")
-
 
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
