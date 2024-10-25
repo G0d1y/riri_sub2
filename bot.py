@@ -65,23 +65,35 @@ async def handle_document(client, message):
 
     document = message.document
     if document.mime_type in ["video/x-matroska", "video/mp4"]:
-        video_file = await download_document(client, document, "video.mkv")
-        await client.send_message(message.chat.id, "لطفاً فایل زیرنویس را ارسال کنید.")
+        # Prompt for output name after downloading video
+        await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
+        
+        output_name = message.text.strip()  # Assuming this is captured correctly
+        video_file = f"downloaded_{output_name}.mkv"
+        
+        # Download the video with the specified name
+        await download_document(client, document, video_file)
 
-        # Set user state to waiting for subtitle file
+        # Update user state to waiting for subtitle file
         user_state[message.chat.id] = {"video_file": video_file, "step": "waiting_for_subtitle"}
         return
 
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_subtitle":
-        # Download subtitle with original name
-        subtitle_filename = document.file_name  # Get the original file name
-        subtitle_file = await download_document(client, document, subtitle_filename)
+        # Download subtitle with specified name
+        output_name = user_state[message.chat.id]["output_name"]
+        subtitle_file = f"{output_name}_subtitle.srt"
+        
+        # Download the subtitle with the specified name
+        await download_document(client, document, subtitle_file)
         video_file = user_state[message.chat.id]["video_file"]
-        await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
 
-        # Update user state to waiting for output name
-        user_state[message.chat.id]["subtitle_file"] = subtitle_file
-        user_state[message.chat.id]["step"] = "waiting_for_output_name"
+        await client.send_message(message.chat.id, "ویدیو و زیرنویس دریافت شد. در حال پردازش...")
+
+        # Process video with the downloaded files
+        await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
+
+        # Clear user state after processing
+        del user_state[message.chat.id]
         return
 
 @app.on_message(filters.text)
@@ -89,19 +101,12 @@ async def handle_output_name(client, message):
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
         output_name = message.text.strip()
         if output_name:  # Ensure the output name is not empty
-            video_file = user_state[message.chat.id]["video_file"]
-            subtitle_file = user_state[message.chat.id]["subtitle_file"]
-
-            # Process video with files
-            await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
-
-            # Clear user state after processing
-            del user_state[message.chat.id]
+            user_state[message.chat.id]["output_name"] = output_name  # Store output name for use
+            await client.send_message(message.chat.id, "لطفاً فایل ویدیو را ارسال کنید.")
         else:
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else:
-        await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو و زیرنویس ارسال کنید.")
-
+        await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو را ارسال کنید.")
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
