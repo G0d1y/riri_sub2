@@ -25,6 +25,10 @@ video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
 
+async def download_document(document, download_path):
+    await document.download(download_path)
+    return download_path
+
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
         command = [
@@ -254,6 +258,31 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(full_output)
     os.remove(trimmed_output_path)
 
+async def process_video_with_files(video_file, subtitle_file, output_name, client, chat_id):
+    output_path = output_name + '.mkv'
+    full_output = f'full_{output_path}'
+    processing_start_time = time.time()
+    
+    shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
+    process_videos(video_file, 'trailer.mkv', full_output)
+    final_output_path = f'{output_name}.mkv'
+    add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
+    trimmed_output_path = 'trimmed.mkv'
+    trim_video(final_output_path, trimmed_output_path, duration=90)
+    
+    processing_time = time.time() - processing_start_time
+    await client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
+    await client.send_document(chat_id, trimmed_output_path, caption=f"{output_name}\n{trimmed_output_path}", thumb="cover.jpg")
+    await client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+    await client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
+
+    os.remove(video_file)
+    os.remove(subtitle_file)
+    os.remove(shifted_subtitle_file)
+    os.remove(final_output_path)
+    os.remove(full_output)
+    os.remove(trimmed_output_path)
+
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
     exclude_files = {'trailer.mkv'}
@@ -297,6 +326,26 @@ def collect_links(client, message):
 
     if not video_queue.empty():
         client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
+
+@app.on_message(filters.document)
+async def handle_document(client, message):
+    if message.chat.id not in admins:
+        await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
+        return
+
+    document = message.document
+    if document.mime_type in ["video/x-matroska", "video/mp4"]:
+        video_file = await download_document(document, "video.mkv")
+        await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
+
+        subtitle_message = await client.listen(filters.document & filters.private)
+        subtitle_file = await download_document(subtitle_message.document, "subtitle.srt")
+
+        await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
+        output_name_message = await client.listen(filters.text & filters.private)
+        output_name = output_name_message.text.strip()
+
+        await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
 
 def process_video_queue():
     while True:
