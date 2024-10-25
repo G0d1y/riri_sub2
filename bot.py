@@ -60,7 +60,7 @@ async def download_document(client, document, file_name, chat_id):
             speed = 0
             remaining_time = float('inf')
 
-        if int(current / (total / 100)) % 5 == 0:
+        if int(current / (total / 100)) % 3 == 0:
             message_content = (
                 f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
                 f"سرعت: {speed:.2f} MB/s\n"
