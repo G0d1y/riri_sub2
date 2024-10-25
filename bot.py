@@ -45,7 +45,6 @@ async def download_document(client, document, file_name, chat_id):
     downloaded = 0
     start_time = time.time()
 
-    # Send an initial message for progress updates
     progress_message = await client.send_message(chat_id, "دانلود آغاز شد...")
 
     async def progress(current, total):
@@ -55,14 +54,13 @@ async def download_document(client, document, file_name, chat_id):
         elapsed_time = current_time - start_time
         
         if elapsed_time > 0:
-            speed = (downloaded / (1024 * 1024)) / elapsed_time  # MB/s
+            speed = (downloaded / (1024 * 1024)) / elapsed_time
             remaining_time = (total_size - downloaded) / (speed * 1024 * 1024) if speed > 0 else float('inf')
         else:
             speed = 0
             remaining_time = float('inf')
 
-        # Update the progress message every second
-        if int(current / (total / 100)) % 5 == 0:  # Update at every 1% completion
+        if int(current / (total / 100)) % 5 == 0:
             message_content = (
                 f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
                 f"سرعت: {speed:.2f} MB/s\n"
@@ -72,7 +70,6 @@ async def download_document(client, document, file_name, chat_id):
     
     try:
         await client.download_media(document, file_path, progress=progress)
-        # Final message after download completion
         await client.edit_message_text(progress_message.chat.id, progress_message.id, "دانلود کامل شد!")
         return file_path
     except Exception as e:
@@ -149,8 +146,23 @@ async def handle_output_name(client, message):
             del user_state[message.chat.id]
         else:
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
-    else:
-        await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو و زیرنویس ارسال کنید.")
+    else: 
+        if message.chat.id not in admins:
+            client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
+            return
+        tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
+
+        for i in range(0, len(tasks), 3):
+            if i + 2 < len(tasks):
+                video_link = tasks[i].strip()
+                subtitle_link = tasks[i + 1].strip()
+                output_name = tasks[i + 2].strip()
+
+                if video_link and subtitle_link and output_name:
+                    video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
+
+        if not video_queue.empty():
+            client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
@@ -396,24 +408,6 @@ def start_processing(client, message):
             if os.path.isfile(file_path):
                     os.remove(file_path)
 
-@app.on_message(filters.text)
-def collect_links(client, message):
-    if message.chat.id not in admins:
-        client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
-        return
-    tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
-
-    for i in range(0, len(tasks), 3):
-        if i + 2 < len(tasks):
-            video_link = tasks[i].strip()
-            subtitle_link = tasks[i + 1].strip()
-            output_name = tasks[i + 2].strip()
-
-            if video_link and subtitle_link and output_name:
-                video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
-
-    if not video_queue.empty():
-        client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
 def process_video_queue():
     while True:
