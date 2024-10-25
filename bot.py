@@ -263,6 +263,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     full_output = f'full_{output_path}'
     processing_start_time = time.time()
     
+    # Shift subtitle timing, process video, add subtitles
     shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
     process_videos(video_file, 'trailer.mkv', full_output)
     final_output_path = f'{output_name}.mkv'
@@ -276,6 +277,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     await client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     await client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
+    # Clean up files after processing
     os.remove(video_file)
     os.remove(subtitle_file)
     os.remove(shifted_subtitle_file)
@@ -337,17 +339,20 @@ async def handle_document(client, message):
     if document.mime_type in ["video/x-matroska", "video/mp4"]:
         video_file = await download_document(client, document, "video.mkv")
         await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
-
-        subtitle_message = await client.listen(filters.document & filters.private)
+        
+        # Wait for the subtitle document
+        subtitle_message = await client.wait_for_message(filters.document & filters.private, chat_id=message.chat.id)
         subtitle_file = await download_document(client, subtitle_message.document, "subtitle.srt")
 
         await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
-        output_name_message = await client.listen(filters.text & filters.private)
+        
+        # Wait for the output name
+        output_name_message = await client.wait_for_message(filters.text & filters.private, chat_id=message.chat.id)
         output_name = output_name_message.text.strip()
 
         # Process video with files
         await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
-        
+
 def process_video_queue():
     while True:
         try:
