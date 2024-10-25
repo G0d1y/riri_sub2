@@ -46,7 +46,6 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     full_output = f'full_{output_path}'
     processing_start_time = time.time()
     
-    # Shift subtitle timing, process video, add subtitles
     shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
     process_videos(video_file, 'trailer.mkv', full_output)
     final_output_path = f'{output_name}.mkv'
@@ -99,12 +98,12 @@ async def handle_output_name(client, message):
         output_name = message.text.strip()
         if output_name:  # Ensure the output name is not empty
             # Retrieve the original file paths
-            original_video_file = user_state[message.chat.id]["video_file"]
-            original_subtitle_file = user_state[message.chat.id]["subtitle_file"]
+            original_video_file = user_state[message.chat.id]["video_file"]  # e.g., "video.mkv"
+            original_subtitle_file = user_state[message.chat.id]["subtitle_file"]  # e.g., "subtitle.srt"
 
             # Construct new file names
-            new_video_file = f"downloaded_{output_name}"
-            new_subtitle_file = f"{output_name}_subtitle.srt"
+            new_video_file = f"downloaded_{output_name}.mkv"  # e.g., "downloaded_output_name.mkv"
+            new_subtitle_file = f"{output_name}_subtitle.srt"  # e.g., "output_name_subtitle.srt"
 
             # Rename the video file
             if os.path.exists(original_video_file):
@@ -127,7 +126,6 @@ async def handle_output_name(client, message):
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else:
         await client.send_message(message.chat.id, "لطفاً ابتدا ویدیو و زیرنویس ارسال کنید.")
-
 
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
