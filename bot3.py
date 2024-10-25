@@ -210,18 +210,15 @@ def download_file(url, filename, chat_id, message_id):
                 last_update_time = current_time
 
 def create_ts_file(input_video, output_file):
-    """Create .ts file from the input video."""
+    """Create .ts file from the input video with re-encoding."""
     if os.path.exists(input_video):
         try:
             cmd = [
-                'ffmpeg',
-                '-f', 'concat',
-                '-safe', '0',
-                '-i', 'concat_list.txt',
+                'ffmpeg', '-i', input_video, 
                 '-c:v', 'libx264',
-                '-preset' 'slow',
-                '-crf', '23',
-                output_file
+                '-c:a', 'aac', 
+                '-b:a', '320k',
+                '-f', 'mpegts', output_file
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
@@ -230,7 +227,6 @@ def create_ts_file(input_video, output_file):
         except Exception as e:
             print(f"Error running FFmpeg for {output_file}: {e}")
     else:
-        
         print(f"Error: {input_video} not found.")
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
@@ -293,6 +289,38 @@ def get_video_fps(video_path):
         print(f"Error getting video info: {e}")
         return None, None, None, None
     
+def add_watermark(video_path, output_path):
+    print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
+    trailer_path = 'trailer.mkv'
+    output_trailer_path = 'ConvertedTrailer.mkv'
+    target_fps = get_video_fps(video_path)
+    re_encode_trailer(trailer_path, output_trailer_path, target_fps)
+
+    concat_file_path = 'concat_list.txt'
+    
+    with open(concat_file_path, 'w') as f:
+        f.write(f"file '{output_trailer_path}'\n")
+        f.write(f"file '{video_path}'\n")
+
+    concat_cmd = [
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concat_file_path,
+        '-c:v', 'libx264',
+        '-preset' 'slow',
+        '-crf', '23',
+        '-y',
+        output_path
+    ]
+    subprocess.run(concat_cmd)
+
+    for file_path in [concat_file_path]:
+        if os.path.exists(file_path):
+                os.remove(file_path)
+    
+    return output_path
+
 def seconds_to_subrip_time(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
@@ -366,6 +394,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(full_output)
     os.remove(trimmed_output_path)
 
+
+
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
     global video_tasks
@@ -378,6 +408,7 @@ def start_processing(client, message):
             file_path = os.path.join(directory2, filename)
             if os.path.isfile(file_path):
                     os.remove(file_path)
+
 
 def process_video_queue():
     while True:
