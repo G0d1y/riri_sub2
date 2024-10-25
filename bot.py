@@ -250,7 +250,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(downloaded)
     os.remove(output_name + '_subtitle.srt')
     os.remove(shifted_subtitle_file)
-    os.remove(output_path)
     os.remove(final_output_path)
     os.remove(full_output)
     os.remove(trimmed_output_path)
