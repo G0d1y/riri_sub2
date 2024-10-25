@@ -238,8 +238,15 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             print(open('concat_list.txt').read())
 
             cmd = [
-                'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c', 'copy' , final_output
+                'ffmpeg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', 'concat_list.txt',
+                '-c:v', 'libx264',
+                '-preset' 'slow',
+                '-crf', '23',
+                '-y',
+                final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
