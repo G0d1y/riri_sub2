@@ -24,10 +24,7 @@ app = Client(
 video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
-
-async def download_document(client, document, download_path):
-    await client.download_media(document, download_path)
-    return download_path
+user_state = {}
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
@@ -258,6 +255,10 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(full_output)
     os.remove(trimmed_output_path)
 
+async def download_document(client, document, download_path):
+    await client.download_media(document, download_path)
+    return download_path
+
 async def process_video_with_files(video_file, subtitle_file, output_name, client, chat_id):
     output_path = output_name + '.mkv'
     full_output = f'full_{output_path}'
@@ -284,6 +285,42 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     os.remove(final_output_path)
     os.remove(full_output)
     os.remove(trimmed_output_path)
+
+@app.on_message(filters.document)
+async def handle_document(client, message):
+    if message.chat.id not in admins:
+        await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
+        return
+
+    document = message.document
+    if document.mime_type in ["video/x-matroska", "video/mp4"]:
+        video_file = await download_document(client, document, "video.mkv")
+        await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
+
+        # Set user state to waiting for subtitle file
+        user_state[message.chat.id] = {"video_file": video_file, "step": "waiting_for_subtitle"}
+        return
+
+    if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_subtitle":
+        subtitle_file = await download_document(client, document, "subtitle.srt")
+        video_file = user_state[message.chat.id]["video_file"]
+        await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
+
+        # Update user state to waiting for output name
+        user_state[message.chat.id]["subtitle_file"] = subtitle_file
+        user_state[message.chat.id]["step"] = "waiting_for_output_name"
+        return
+
+    if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
+        output_name = message.text.strip()
+        video_file = user_state[message.chat.id]["video_file"]
+        subtitle_file = user_state[message.chat.id]["subtitle_file"]
+
+        # Process video with files
+        await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
+
+        # Clear user state after processing
+        del user_state[message.chat.id]
 
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
@@ -328,30 +365,6 @@ def collect_links(client, message):
 
     if not video_queue.empty():
         client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
-
-@app.on_message(filters.document)
-async def handle_document(client, message):
-    if message.chat.id not in admins:
-        await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
-        return
-
-    document = message.document
-    if document.mime_type in ["video/x-matroska", "video/mp4"]:
-        video_file = await download_document(client, document, "video.mkv")
-        await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
-        
-        # Wait for the subtitle document
-        subtitle_message = await client.wait_for_message(filters.document & filters.private, chat_id=message.chat.id)
-        subtitle_file = await download_document(client, subtitle_message.document, "subtitle.srt")
-
-        await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
-        
-        # Wait for the output name
-        output_name_message = await client.wait_for_message(filters.text & filters.private, chat_id=message.chat.id)
-        output_name = output_name_message.text.strip()
-
-        # Process video with files
-        await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
 
 def process_video_queue():
     while True:
