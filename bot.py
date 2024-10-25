@@ -25,6 +25,17 @@ video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
 user_state = {}
+@app.on_message(filters.command("clear"))
+def remove_files(client , message):
+    exclude_files = {'trailer.mkv'}
+
+    directory = os.getcwd()
+
+    for filename in os.listdir(directory):
+        if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
+            file_path = os.path.join(directory, filename)
+            os.remove(file_path)
+    client.send_message(message.chat.id, "فایل های قبلی حذف شدند")
 
 async def download_document(client, document, download_path):
     await client.download_media(document, download_path)
@@ -349,17 +360,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(trimmed_output_path)
 
 
-@app.on_message(filters.command("clear"))
-def remove_files(client , message):
-    exclude_files = {'trailer.mkv'}
-
-    directory = os.getcwd()
-
-    for filename in os.listdir(directory):
-        if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
-            file_path = os.path.join(directory, filename)
-            os.remove(file_path)
-    client.send_message(message.chat.id, "فایل های قبلی حذف شدند")
 
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
