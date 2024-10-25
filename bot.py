@@ -194,9 +194,10 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
-    processing_start_time = time.time()
 
     process_videos(downloaded, 'trailer.mkv', output_path)
+
+    processing_start_time = time.time()
 
     final_output_path = f'{output_name}.mkv'
     add_soft_subtitle(output_path, shifted_subtitle_file, final_output_path)
@@ -207,7 +208,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     trimmed_output_path = '_trimmed.mkv'
     trim_video(final_output_path, trimmed_output_path, duration=90)
-    client.send_document(chat_id, trimmed_output_path, caption= output_name + "\n" + "\n" + 'trimmed.mkv', thumb="cover.jpg")
+    client.send_document(chat_id, trimmed_output_path, caption= output_name + "\n" + 'trimmed.mkv', thumb="cover.jpg")
 
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
