@@ -25,8 +25,8 @@ video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
 
-async def download_document(document, download_path):
-    await document.download(download_path)
+async def download_document(client, document, download_path):
+    await client.download_media(document, download_path)
     return download_path
 
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
@@ -335,18 +335,19 @@ async def handle_document(client, message):
 
     document = message.document
     if document.mime_type in ["video/x-matroska", "video/mp4"]:
-        video_file = await download_document(document, "video.mkv")
+        video_file = await download_document(client, document, "video.mkv")
         await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
 
         subtitle_message = await client.listen(filters.document & filters.private)
-        subtitle_file = await download_document(subtitle_message.document, "subtitle.srt")
+        subtitle_file = await download_document(client, subtitle_message.document, "subtitle.srt")
 
         await client.send_message(message.chat.id, "لطفاً نام خروجی را ارسال کنید.")
         output_name_message = await client.listen(filters.text & filters.private)
         output_name = output_name_message.text.strip()
 
+        # Process video with files
         await process_video_with_files(video_file, subtitle_file, output_name, client, message.chat.id)
-
+        
 def process_video_queue():
     while True:
         try:
