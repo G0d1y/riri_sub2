@@ -194,12 +194,12 @@ def re_encode_trailer(trailer_path, output_trailer_path, target_width, target_he
         command = [
             'ffmpeg', '-i', trailer_path,
             '-vf', f'scale={target_width}:{target_height}',
-            '-b:v', str(target_bitrate),
             '-r', str(target_fps), '-c:v', 'libx264', 
             '-preset', 'slow', '-crf', '18', '-c:a', 'copy', output_trailer_path
         ]
         subprocess.run(command, check=True)
-        print(f"Trailer re-encoded with resolution {target_width}x{target_height}, bitrate {target_bitrate} bps, and FPS {target_fps}.")
+        print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
+        print(f"Trailer re-encoded with resolution {target_width}x{target_height}, and FPS {target_fps}.")
     except subprocess.CalledProcessError as e:
         print(f"Error re-encoding trailer: {e}")
 
@@ -301,38 +301,6 @@ def process_videos(downloaded_video, trailer_video, final_output):
         print("Cleanup: Deleted temporary files.")
     except Exception as e:
         print(f"Error during cleanup: {e}")
-
-def add_watermark(video_path, output_path):
-    print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
-    trailer_path = 'trailer.mkv'
-    output_trailer_path = 'ConvertedTrailer.mkv'
-    target_fps = get_video_fps(video_path)
-    re_encode_trailer(trailer_path, output_trailer_path, target_fps)
-
-    concat_file_path = 'concat_list.txt'
-    
-    with open(concat_file_path, 'w') as f:
-        f.write(f"file '{output_trailer_path}'\n")
-        f.write(f"file '{video_path}'\n")
-
-    concat_cmd = [
-        'ffmpeg',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', concat_file_path,
-        '-c:v', 'libx264',
-        '-preset' 'slow',
-        '-crf', '23',
-        '-y',
-        output_path
-    ]
-    subprocess.run(concat_cmd)
-
-    for file_path in [concat_file_path]:
-        if os.path.exists(file_path):
-                os.remove(file_path)
-    
-    return output_path
 
 def seconds_to_subrip_time(seconds):
     hours = int(seconds // 3600)
