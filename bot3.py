@@ -164,14 +164,42 @@ async def handle_output_name(client, message):
         if not video_queue.empty():
             await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
-def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
+def get_video_attributes(video_path):
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
+             '-show_entries', 'stream=width,height,bit_rate,r_frame_rate', 
+             '-of', 'json', video_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        video_info = json.loads(result.stdout)
+
+        if 'streams' not in video_info or len(video_info['streams']) == 0:
+            raise ValueError(f"Video stream info not found in {video_path}. Please check if the file is a valid video.")
+        
+        width = video_info['streams'][0].get('width', None)
+        height = video_info['streams'][0].get('height', None)
+        bitrate = int(video_info['streams'][0].get('bit_rate', 0))
+        fps_str = video_info['streams'][0].get('r_frame_rate', '0/1')
+        fps = eval(fps_str) if fps_str else 0
+
+        return width, height, bitrate, fps
+
+    except Exception as e:
+        print(f"Error getting video attributes: {e}")
+        return None, None, None, None
+
+def re_encode_trailer(trailer_path, output_trailer_path, target_width, target_height, target_bitrate, target_fps):
     try:
         command = [
-            'ffmpeg', '-i', trailer_path, '-r', str(target_fps), '-c:v', 'libx264', 
-            '-preset', 'slow', '-crf', '18', '-c:a', 'copy' , output_trailer_path
+            'ffmpeg', '-i', trailer_path,
+            '-vf', f'scale={target_width}:{target_height}',
+            '-b:v', str(target_bitrate),
+            '-r', str(target_fps), '-c:v', 'libx264', 
+            '-preset', 'slow', '-crf', '18', '-c:a', 'copy', output_trailer_path
         ]
         subprocess.run(command, check=True)
-        print(f"Trailer re-encoded to match FPS ({target_fps}).")
+        print(f"Trailer re-encoded with resolution {target_width}x{target_height}, bitrate {target_bitrate} bps, and FPS {target_fps}.")
     except subprocess.CalledProcessError as e:
         print(f"Error re-encoding trailer: {e}")
 
@@ -238,7 +266,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c:v', 'libx264', final_output
+                '-c', 'copy' , final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(result.stderr.decode())
@@ -256,37 +284,24 @@ def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
 
-    create_ts_file(trailer_video, trailer_ts)
+    width, height, bitrate, fps = get_video_attributes(downloaded_video)
+    
+    re_encode_trailer(trailer_video, 're_encoded_trailer.mp4', width, height, bitrate, fps)
+    
+    create_ts_file('re_encoded_trailer.mp4', trailer_ts)
     create_ts_file(downloaded_video, downloaded_ts)
+    
     concat_videos(trailer_ts, downloaded_ts, final_output)
 
     try:
         os.remove(trailer_ts)
         os.remove(downloaded_ts)
         os.remove('concat_list.txt')
+        os.remove('re_encoded_trailer.mp4')
         print("Cleanup: Deleted temporary files.")
     except Exception as e:
         print(f"Error during cleanup: {e}")
 
-def get_video_fps(video_path):
-    try:
-        result = subprocess.run(
-            ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,bit_rate,r_frame_rate', '-of', 'json', video_path],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-        video_info = json.loads(result.stdout)
-
-        if 'streams' not in video_info or len(video_info['streams']) == 0:
-            raise ValueError(f"Video stream info not found in {video_path}. Please check if the file is a valid video.")
-        fps_str = video_info['streams'][0].get('r_frame_rate', '0/1')
-        fps = eval(fps_str) if fps_str else 0
-
-        return fps
-
-    except Exception as e:
-        print(f"Error getting video info: {e}")
-        return None, None, None, None
-    
 def add_watermark(video_path, output_path):
     print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
     trailer_path = 'trailer.mkv'
