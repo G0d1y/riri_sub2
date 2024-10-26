@@ -310,19 +310,6 @@ def trim_video(input_file, output_file, duration=90):
         '-t', str(duration), '-c', 'copy', output_file
     ])
 
-def convert_audio_to_stereo(input_file, output_file):
-    command = [
-        'ffmpeg', '-i', input_file,
-        '-c:v', 'copy',
-        '-c:a', 'aac',
-        '-b:a', '192k',
-        '-ac', '2',
-        output_file
-    ]
-
-    subprocess.run(command, check=True)
-    print(f"Conversion complete: {output_file}")
-
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
         client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
@@ -339,8 +326,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
-    video_stereo = 'video_stereo.mkv'
-    convert_audio_to_stereo(downloaded, video_stereo)
     process_videos(downloaded, 'trailer.mkv', full_output)
 
     processing_start_time = time.time()
@@ -365,9 +350,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(final_output_path)
     os.remove(full_output)
     os.remove(trimmed_output_path)
-    os.remove(video_stereo)
-
-
 
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
@@ -381,7 +363,6 @@ def start_processing(client, message):
             file_path = os.path.join(directory2, filename)
             if os.path.isfile(file_path):
                     os.remove(file_path)
-
 
 def process_video_queue():
     while True:
