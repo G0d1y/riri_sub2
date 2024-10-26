@@ -29,7 +29,7 @@ async def download_video(video_url, output_path):
 async def convert_video(input_path, output_path, resolution):
     command = [
         "ffmpeg", "-i", input_path,
-        "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "25", "-c:a", "copy", output_path
+        "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "23", "-c:a", "copy", output_path
     ]
     process = await asyncio.create_subprocess_exec(*command)
     await process.communicate()
