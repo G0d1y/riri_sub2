@@ -50,11 +50,9 @@ async def handle_video_link(client, message):
     converted_video_360p = os.path.join(download_dir, "video_360p.mp4")
 
     await asyncio.gather(
-        convert_video(original_video_path, converted_video_480p, "854:480"),
         convert_video(original_video_path, converted_video_360p, "640:360")
     )
 
-    await client.send_video(chat_id=message.chat.id, video=converted_video_480p, caption="Here is your 480p video!")
     await client.send_video(chat_id=message.chat.id, video=converted_video_360p, caption="Here is your 360p video!")
 
     # Cleanup
