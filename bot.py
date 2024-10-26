@@ -167,12 +167,11 @@ async def handle_output_name(client, message):
 def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
     try:
         command = [
-            'ffmpeg', '-i', trailer_path, '-r', str(target_fps),'-c:v', 'libx264', 
-            '-c:a', 'libfdk_aac', '-b:a', '320k', 
-            output_trailer_path
+            'ffmpeg', '-i', trailer_path, '-r', str(target_fps), '-c:v', 'libx264', 
+            '-preset', 'slow', '-crf', '18', '-c:a', 'copy' , output_trailer_path
         ]
         subprocess.run(command, check=True)
-        print(f"Trailer re-encoded to match FPS ({target_fps}) with libfdk_aac audio.")
+        print(f"Trailer re-encoded to match FPS ({target_fps}).")
     except subprocess.CalledProcessError as e:
         print(f"Error re-encoding trailer: {e}")
 
