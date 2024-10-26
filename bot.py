@@ -164,17 +164,6 @@ async def handle_output_name(client, message):
         if not video_queue.empty():
             await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
-def re_encode_trailer(trailer_path, output_trailer_path, target_fps):
-    try:
-        command = [
-            'ffmpeg', '-i', trailer_path, '-r', str(target_fps), '-c:v', 'libx264', 
-            '-preset', 'slow', '-crf', '18', '-c:a', 'copy' , output_trailer_path
-        ]
-        subprocess.run(command, check=True)
-        print(f"Trailer re-encoded to match FPS ({target_fps}).")
-    except subprocess.CalledProcessError as e:
-        print(f"Error re-encoding trailer: {e}")
-
 def download_file(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
@@ -289,37 +278,6 @@ def get_video_fps(video_path):
         print(f"Error getting video info: {e}")
         return None, None, None, None
     
-def add_watermark(video_path, output_path):
-    print("~~~~~~~~ ADDING TRAILER ~~~~~~~~")
-    trailer_path = 'trailer.mkv'
-    output_trailer_path = 'ConvertedTrailer.mkv'
-    target_fps = get_video_fps(video_path)
-    re_encode_trailer(trailer_path, output_trailer_path, target_fps)
-
-    concat_file_path = 'concat_list.txt'
-    
-    with open(concat_file_path, 'w') as f:
-        f.write(f"file '{output_trailer_path}'\n")
-        f.write(f"file '{video_path}'\n")
-
-    concat_cmd = [
-        'ffmpeg',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', concat_file_path,
-        '-c', 'copy',
-        '-y',
-        output_path
-    ]
-    subprocess.run(concat_cmd)
-    exclude_files = {'trailer.mkv'}
-
-    for file_path in [concat_file_path]:
-        if os.path.exists(file_path):
-                os.remove(file_path)
-    
-    return output_path
-
 def seconds_to_subrip_time(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
@@ -352,6 +310,19 @@ def trim_video(input_file, output_file, duration=90):
         '-t', str(duration), '-c', 'copy', output_file
     ])
 
+def convert_audio_to_stereo(input_file, output_file):
+    command = [
+        'ffmpeg', '-i', input_file,
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-ac', '2',
+        output_file
+    ]
+
+    subprocess.run(command, check=True)
+    print(f"Conversion complete: {output_file}")
+
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
         client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
@@ -368,6 +339,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
 
+    video_stereo = 'video_stereo.mkv'
+    convert_audio_to_stereo(downloaded, video_stereo)
     process_videos(downloaded, 'trailer.mkv', full_output)
 
     processing_start_time = time.time()
@@ -392,6 +365,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(final_output_path)
     os.remove(full_output)
     os.remove(trimmed_output_path)
+    os.remove(video_stereo)
 
 
 
