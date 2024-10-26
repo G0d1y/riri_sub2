@@ -1,12 +1,7 @@
 import os
-import queue
-import requests
-import subprocess
 import json
-import threading
-import time
-from pysrt import SubRipTime , SubRipItem
-import pysrt
+import asyncio
+from aiohttp import ClientSession
 from pyrogram import Client, filters
 with open('config3.json') as config_file:
     config = json.load(config_file)
@@ -20,52 +15,51 @@ app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=b
 download_dir = "downloads"
 os.makedirs(download_dir, exist_ok=True)
 
+async def download_video(video_url, output_path):
+    async with ClientSession() as session:
+        async with session.get(video_url) as response:
+            if response.status == 200:
+                with open(output_path, 'wb') as f:
+                    async for chunk in response.content.iter_chunked(1024):
+                        f.write(chunk)
+                return True
+            else:
+                return False
+
+async def convert_video(input_path, output_path, resolution):
+    command = [
+        "ffmpeg", "-i", input_path,
+        "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "25", "-c:a", "copy", output_path
+    ]
+    process = await asyncio.create_subprocess_exec(*command)
+    await process.communicate()
+
 @app.on_message(filters.text & filters.private)
 async def handle_video_link(client, message):
     video_link = message.text
     original_video_path = os.path.join(download_dir, "original_540p_video.mp4")
     
-    try:
-        response = requests.get(video_link, stream=True)
-        if response.status_code == 200:
-            with open(original_video_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    f.write(chunk)
-            await message.reply("Video downloaded successfully! Converting to 480p and 360p...")
-        else:
-            await message.reply("Failed to download video. Please check the link.")
-            return
-    except Exception as e:
-        await message.reply(f"An error occurred while downloading the video: {e}")
+    await message.reply("Starting video download...")
+    download_success = await download_video(video_link, original_video_path)
+    if not download_success:
+        await message.reply("Failed to download video. Please check the link.")
         return
 
+    await message.reply("Converting to 480p and 360p...")
     converted_video_480p = os.path.join(download_dir, "video_480p.mp4")
     converted_video_360p = os.path.join(download_dir, "video_360p.mp4")
 
-    ffmpeg_command_480p = [
-        "ffmpeg", "-i", original_video_path,
-        "-vf", "scale=854:480", "-c:a", "copy", converted_video_480p
-    ]
-    ffmpeg_command_360p = [
-        "ffmpeg", "-i", original_video_path,
-        "-vf", "scale=640:360", "-c:a", "copy", converted_video_360p
-    ]
+    await asyncio.gather(
+        convert_video(original_video_path, converted_video_480p, "854:480"),
+        convert_video(original_video_path, converted_video_360p, "640:360")
+    )
 
-    try:
-        subprocess.run(ffmpeg_command_480p, check=True)
-        subprocess.run(ffmpeg_command_360p, check=True)
-    except subprocess.CalledProcessError as e:
-        await message.reply(f"An error occurred during video conversion: {e}")
-        return
+    await client.send_video(chat_id=message.chat.id, video=converted_video_480p, caption="Here is your 480p video!")
+    await client.send_video(chat_id=message.chat.id, video=converted_video_360p, caption="Here is your 360p video!")
 
-    try:
-        await client.send_video(chat_id=message.chat.id, video=converted_video_480p, caption="Here is your 480p video!")
-        await client.send_video(chat_id=message.chat.id, video=converted_video_360p, caption="Here is your 360p video!")
-    except Exception as e:
-        await message.reply(f"An error occurred while sending videos: {e}")
-    finally:
-        os.remove(original_video_path)
-        os.remove(converted_video_480p)
-        os.remove(converted_video_360p)
+    # Cleanup
+    os.remove(original_video_path)
+    os.remove(converted_video_480p)
+    os.remove(converted_video_360p)
 
 app.run()
