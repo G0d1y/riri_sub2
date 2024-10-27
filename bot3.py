@@ -15,8 +15,6 @@ bot_token = config['bot_token']
 
 app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-download_dir = "./downloads"
-os.makedirs(download_dir, exist_ok=True)
 
 def download_video(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
@@ -63,28 +61,21 @@ def convert_video(input_path, output_path, resolution):
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
     video_link = message.text
-    original_video_path = os.path.join(download_dir, "original_540p_video.mkv")
+    original_video_path = os.path.join("original_540p_video.mkv")
     
     message.reply("Starting video download...")
     msg = message.reply("Downloading video...")
     
+    for output_file in ["video_480p.mkv", "video_360p.mkv" , "original_540p_video.mkv"]:
+        if os.path.exists(output_file):
+            os.remove(output_file)
+            print(f"Deleted existing file: {output_file}")
+
     download_video(video_link, original_video_path, message.chat.id, msg.id)
 
-    if not os.path.exists(download_dir):
-        os.makedirs(download_dir)
-    else:
-        for filename in os.listdir(download_dir):
-            file_path = os.path.join(download_dir, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.remove(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print(f"Failed to delete {file_path}. Reason: {e}")
+    converted_video_480p = os.path.join("video_480p.mkv")
+    converted_video_360p = os.path.join("video_360p.mkv")
 
-    converted_video_480p = os.path.join(download_dir, "video_480p.mp4")
-    converted_video_360p = os.path.join(download_dir, "video_360p.mp4")
 
     convert_video(original_video_path, converted_video_480p, "854:480")
     convert_video(original_video_path, converted_video_360p, "640:360")
