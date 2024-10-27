@@ -87,7 +87,7 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
             current_time = time.time()
             if current_time - last_update_time >= 1:
                 if message_content != previous_message:
-                    app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
+                    app.edit_message_text(chat_id, message_id, message_content)
                     previous_message = message_content
                 last_update_time = current_time
 
