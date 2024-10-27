@@ -66,7 +66,7 @@ async def handle_video_link(client, message):
     video_link = message.text
     original_video_path = os.path.join(download_dir, "original_540p_video.mp4")
     
-    message = await client.send_message(message.chat.id, f"شروع دانلود...")
+    message = client.send_message(message.chat.id, f"شروع دانلود...")
     download_success = download_video(video_link, original_video_path , message.chat.id, message)
     if not download_success:
         await message.reply("Failed to download video. Please check the link.")
