@@ -63,7 +63,7 @@ def convert_video(input_path, output_path, resolution):
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
     video_link = message.text
-    original_video_path = os.path.join(download_dir, "original_540p_video.mp4")
+    original_video_path = os.path.join(download_dir, "original_540p_video.mkv")
     
     message.reply("Starting video download...")
     msg = message.reply("Downloading video...")
