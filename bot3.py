@@ -74,27 +74,31 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
         if output:
             print(f"FFmpeg Output: {output.strip()}")  # Debug output
             match = progress_pattern.search(output)
-            if match:
-                frame, fps, q, size, current_time, bitrate, speed = match.groups()
+        if match:
+            frame, fps, q, size, current_time, bitrate, speed = match.groups()
 
-                message_content = (
-                    f"در حال پردازش ویدیو: \n"
-                    f"فریم: {frame}\n"
-                    f"FPS: {fps}\n"
-                    f"کیفیت: {q}\n"
-                    f"اندازه: {size} KiB\n"
-                    f"زمان: {current_time}\n"
-                    f"بیت‌ریت: {bitrate} kbits/s\n"
-                    f"سرعت: {speed}x"
-                )
+            message_content = (
+                f"در حال پردازش ویدیو: \n"
+                f"فریم: {frame}\n"
+                f"FPS: {fps}\n"
+                f"کیفیت: {q}\n"
+                f"اندازه: {size} KiB\n"
+                f"زمان: {current_time}\n"
+                f"بیت‌ریت: {bitrate} kbits/s\n"
+                f"سرعت: {speed}x"
+            )
 
-                current_time = time.time()
-                if current_time - last_update_time >= 1:  # Update every second
-                    if message_content != previous_message:
-                        app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
-                        previous_message = message_content
+            print(f"Message Content: {message_content}")
+
+            current_time = time.time()
+            if current_time - last_update_time >= 1:  
+                if message_content != previous_message:
+                    print("Updating Telegram message...")
+                    app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
+                    previous_message = message_content
                     last_update_time = current_time
-
+                else:
+                    print("Message content has not changed, skipping update.")
     process.wait()
 
 @app.on_message(filters.text & filters.private)
