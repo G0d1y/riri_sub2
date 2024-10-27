@@ -368,7 +368,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     message_id = message.id
 
     downloaded = f'downloaded_{output_path}'
-    for output_file in [downloaded, full_output, output_path , output_name + '_subtitle.srt' , output_name + '_shifted.srt' , 'trimmed.mkv' , 'trimmed_low_quality.mkv']:
+    for output_file in [downloaded, full_output, output_path , output_name + '_subtitle.srt' , output_name + '_subtitle_shifted.srt' , 'trimmed.mkv' , 'trimmed_low_quality.mkv']:
         if os.path.exists(output_file):
             os.remove(output_file)
             print(f"Deleted existing file: {output_file}")
@@ -398,8 +398,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     client.send_document(chat_id, trimmed_output_path, caption= output_name, thumb="cover.jpg")
 
     trimmed_low_output_path = 'trimmed_low_quality.mkv'
-    low_qulity(trimmed_output_path, trimmed_low_output_path)
-    client.send_document(chat_id, trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
 
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
