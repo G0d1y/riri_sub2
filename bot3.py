@@ -2,11 +2,9 @@ import os
 import json
 import time
 import requests
-import shutil
 import subprocess
 import re
 from pyrogram import Client, filters
-
 with open('config3.json') as config_file:
     config = json.load(config_file)
 
@@ -59,7 +57,7 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
     ]
 
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
-    print(process.stderr.decode())
+    print(process.stderr.readline())
 
     progress_pattern = re.compile(
         r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)kB\s+time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
