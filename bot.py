@@ -359,6 +359,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     downloaded = f'downloaded_{output_path}'
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
+    processing_start_time = time.time()
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
     
@@ -369,7 +370,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد")
     process_videos(downloaded, aac_profile, full_output)
 
-    processing_start_time = time.time()
 
     final_output_path = f'{output_name}.mkv'
     add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)

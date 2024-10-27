@@ -1,4 +1,7 @@
 import os
+import requests
+import json
+import time
 import json
 import asyncio
 from aiohttp import ClientSession
@@ -16,16 +19,39 @@ app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=b
 download_dir = "downloads"
 os.makedirs(download_dir, exist_ok=True)
 
-async def download_video(video_url, output_path):
-    async with ClientSession() as session:
-        async with session.get(video_url) as response:
-            if response.status == 200:
-                with open(output_path, 'wb') as f:
-                    async for chunk in response.content.iter_chunked(1024):
-                        f.write(chunk)
-                return True
+def download_video(url, filename, chat_id, message_id):
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get('content-length', 0))
+    downloaded = 0
+    start_time = time.time()
+    
+    with open(filename, 'wb') as f:
+        last_update_time = time.time() 
+        previous_message = "" 
+        for data in response.iter_content(chunk_size=1024):
+            f.write(data)
+            downloaded += len(data)
+            current_time = time.time()
+            elapsed_time = current_time - start_time
+            
+            if elapsed_time > 0:
+                speed = (downloaded / (1024 * 1024)) / elapsed_time
+                remaining_time = (total_size - downloaded) / (speed * 1024 * 1024)
             else:
-                return False
+                speed = 0
+                remaining_time = float('inf')
+            
+            if current_time - last_update_time >= 1:
+                message_content = (
+                    f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total_size / (1024 * 1024):.2f} MB\n"
+                    f"سرعت: {speed:.2f} MB/s\n"
+                    f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
+                )
+                
+                if message_content != previous_message:
+                    app.edit_message_text(chat_id, message_id, message_content)
+                    previous_message = message_content
+                last_update_time = current_time
 
 async def convert_video(input_path, output_path, resolution):
     command = [
@@ -40,8 +66,8 @@ async def handle_video_link(client, message):
     video_link = message.text
     original_video_path = os.path.join(download_dir, "original_540p_video.mp4")
     
-    await message.reply("Starting video download...")
-    download_success = await download_video(video_link, original_video_path)
+    message = await client.send_message(message.chat.id, f"شروع دانلود...")
+    download_success = await download_video(video_link, original_video_path , message.chat.id, message)
     if not download_success:
         await message.reply("Failed to download video. Please check the link.")
         return
