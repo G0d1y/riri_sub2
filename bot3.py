@@ -68,7 +68,7 @@ async def handle_video_link(client, message):
     await message.reply("Starting video download...")
     msg = await message.reply("Downloading video...")
     
-    download_video(video_link, original_video_path, message.chat.id, msg.message_id)
+    download_video(video_link, original_video_path, message.chat.id, msg.id)
 
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
