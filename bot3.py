@@ -1,12 +1,11 @@
 import os
-import requests
 import json
 import time
-import json
-import asyncio
-from aiohttp import ClientSession
-import shutil
+import requests
 from pyrogram import Client, filters
+import shutil
+import asyncio
+
 with open('config3.json') as config_file:
     config = json.load(config_file)
 
@@ -19,15 +18,15 @@ app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=b
 download_dir = "downloads"
 os.makedirs(download_dir, exist_ok=True)
 
-async def download_video(url, filename, chat_id, message_id):
+def download_video(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
     start_time = time.time()
     
     with open(filename, 'wb') as f:
-        last_update_time = time.time() 
-        previous_message = "" 
+        last_update_time = time.time()
+        previous_message = ""
         for data in response.iter_content(chunk_size=1024):
             f.write(data)
             downloaded += len(data)
@@ -43,13 +42,13 @@ async def download_video(url, filename, chat_id, message_id):
             
             if current_time - last_update_time >= 1:
                 message_content = (
-                    f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total_size / (1024 * 1024):.2f} MB\n"
-                    f"سرعت: {speed:.2f} MB/s\n"
-                    f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
+                    f"Downloading: {downloaded / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
+                    f"Speed: {speed:.2f} MB/s\n"
+                    f"Time Remaining: {remaining_time:.2f} seconds"
                 )
                 
                 if message_content != previous_message:
-                    await app.edit_message_text(chat_id, message_id, message_content)
+                    app.edit_message_text(chat_id, message_id, message_content)
                     previous_message = message_content
                 last_update_time = current_time
 
@@ -66,11 +65,10 @@ async def handle_video_link(client, message):
     video_link = message.text
     original_video_path = os.path.join(download_dir, "original_540p_video.mp4")
     
-    message = await client.send_message(message.chat.id, f"شروع دانلود...")
-    download_success = await download_video(video_link, original_video_path , message.chat.id, message)
-    if not download_success:
-        await message.reply("Failed to download video. Please check the link.")
-        return
+    await message.reply("Starting video download...")
+    msg = await message.reply("Downloading video...")
+    
+    download_video(video_link, original_video_path, message.chat.id, msg.message_id)
 
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
@@ -96,8 +94,8 @@ async def handle_video_link(client, message):
         convert_video(original_video_path, converted_video_360p, "640:360")
     )
 
-    await client.send_document(chat_id=message.chat.id, documnet=converted_video_480p, caption="Here is your 480p video!")
-    await client.send_document(chat_id=message.chat.id, documnet=converted_video_360p, caption="Here is your 360p video!")
+    await client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
+    await client.send_document(chat_id=message.chat.id, document=converted_video_360p, caption="Here is your 360p video!")
 
     os.remove(original_video_path)
     os.remove(converted_video_480p)
