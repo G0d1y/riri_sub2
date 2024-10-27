@@ -368,7 +368,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     message_id = message.id
 
     downloaded = f'downloaded_{output_path}'
-
+    for output_file in [downloaded, full_output, output_path , output_name + '_subtitle.srt' , output_name + '_shifted.srt' , 'trimmed.mkv' , 'trimmed_low_quality.mkv']:
+        if os.path.exists(output_file):
+            os.remove(output_file)
+            print(f"Deleted existing file: {output_file}")
+            
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
     processing_start_time = time.time()
