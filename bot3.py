@@ -15,7 +15,7 @@ bot_token = config['bot_token']
 
 app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-download_dir = "downloads"
+download_dir = "./downloads"
 os.makedirs(download_dir, exist_ok=True)
 
 def download_video(url, filename, chat_id, message_id):
@@ -43,9 +43,9 @@ def download_video(url, filename, chat_id, message_id):
             
             if current_time - last_update_time >= 1:
                 message_content = (
-                    f"Downloading: {downloaded / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
-                    f"Speed: {speed:.2f} MB/s\n"
-                    f"Time Remaining: {remaining_time:.2f} seconds"
+                    f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total_size / (1024 * 1024):.2f} MB\n"
+                    f"سرعت: {speed:.2f} MB/s\n"
+                    f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
                 )
                 
                 if message_content != previous_message:
