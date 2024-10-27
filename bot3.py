@@ -49,7 +49,7 @@ def download_video(url, filename, chat_id, message_id):
                 )
                 
                 if message_content != previous_message:
-                    app.edit_message_text(chat_id, message_content, message_id)
+                    app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
                     previous_message = message_content
                 last_update_time = current_time
 
