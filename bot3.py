@@ -58,8 +58,10 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
         "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "23", "-c:a", "copy", output_path
     ]
 
+    # Use Popen to capture stderr for progress updates
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
 
+    # Regular expression to match ffmpeg progress lines
     progress_pattern = re.compile(
         r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)kB\s+time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
     )
@@ -67,32 +69,41 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
     last_update_time = time.time()
     previous_message = ""
 
-    for line in process.stderr:
-        # Match the progress line
-        match = progress_pattern.search(line)
-        if match:
-            frame, fps, q, size, current_time, bitrate, speed = match.groups()
+    while True:
+        # Read the output line by line
+        output = process.stderr.readline()
+        
+        # Break the loop if the process has finished
+        if output == '' and process.poll() is not None:
+            break
+        
+        if output:
+            # Match the progress line
+            match = progress_pattern.search(output)
+            if match:
+                frame, fps, q, size, current_time, bitrate, speed = match.groups()
 
-            message_content = (
-                f"تبدیل ویدیو: \n"
-                f"فریم: {frame}\n"
-                f"FPS: {fps}\n"
-                f"کیفیت: {q}\n"
-                f"اندازه: {size} KiB\n"
-                f"زمان: {current_time}\n"
-                f"بیت‌ریت: {bitrate} kbits/s\n"
-                f"سرعت: {speed}x"
-            )
+                message_content = (
+                    f"در حال پردازش ویدیو: \n"
+                    f"فریم: {frame}\n"
+                    f"FPS: {fps}\n"
+                    f"کیفیت: {q}\n"
+                    f"اندازه: {size} KiB\n"
+                    f"زمان: {current_time}\n"
+                    f"بیت‌ریت: {bitrate} kbits/s\n"
+                    f"سرعت: {speed}x"
+                )
 
-            current_time = time.time()
-            if current_time - last_update_time >= 1:
-                if message_content != previous_message:
-                    app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
-                    previous_message = message_content
-                last_update_time = current_time
+                current_time = time.time()
+                if current_time - last_update_time >= 1:  # Update every second
+                    if message_content != previous_message:
+                        app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
+                        previous_message = message_content
+                    last_update_time = current_time
 
+    # Wait for the process to complete
     process.wait()
-
+    
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
     video_link = message.text
