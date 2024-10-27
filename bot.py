@@ -82,7 +82,10 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     output_path = output_name + '.mkv'
     full_output = f'full_{output_path}'
     processing_start_time = time.time()
-    
+    for output_file in [full_output, output_path, 'trimmed.mkv' , 'trimmed_low_quality.mkv']:
+        if os.path.exists(output_file):
+            os.remove(output_file)
+            print(f"Deleted existing file: {output_file}")
     shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
     aac_profile = get_aac_profile(video_file)
     if aac_profile == "trailer.mkv":
@@ -142,7 +145,10 @@ async def handle_output_name(client, message):
 
             new_video_file = f"downloaded_{output_name}.mkv" 
             new_subtitle_file = f"{output_name}_subtitle.srt"
-
+            for output_file in [new_video_file, new_subtitle_file, output_name + '_subtitle.srt' , output_name + '_subtitle_shifted.srt']:
+                if os.path.exists(output_file):
+                    os.remove(output_file)
+            print(f"Deleted existing file: {output_file}")
             if os.path.exists(original_video_file):
                 os.rename(original_video_file, new_video_file)
 
@@ -368,11 +374,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     message_id = message.id
 
     downloaded = f'downloaded_{output_path}'
-    for output_file in [downloaded, full_output, output_path , output_name + '_subtitle.srt' , output_name + '_shifted.srt' , 'trimmed.mkv' , 'trimmed_low_quality.mkv']:
+    for output_file in [downloaded, full_output, output_path , output_name + '_subtitle.srt' , output_name + '_subtitle_shifted.srt' , 'trimmed.mkv' , 'trimmed_low_quality.mkv']:
         if os.path.exists(output_file):
             os.remove(output_file)
             print(f"Deleted existing file: {output_file}")
-            
+
     download_file(video_link, downloaded, chat_id, message_id)
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
     processing_start_time = time.time()
