@@ -87,7 +87,7 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
             current_time = time.time()
             if current_time - last_update_time >= 1:
                 if message_content != previous_message:
-                    app.edit_message_text(chat_id, message_id, message_content)
+                    app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
                     previous_message = message_content
                 last_update_time = current_time
 
@@ -112,8 +112,8 @@ def handle_video_link(client, message):
 
     convert_msg = message.reply("درحال پردازش ویدیو...")
 
-    convert_video(original_video_path, converted_video_480p, "854:480" , convert_msg.id)
-    convert_video(original_video_path, converted_video_360p, "640:360" , convert_msg.id)
+    convert_video(original_video_path, converted_video_480p, "854:480", message.chat.id, convert_msg.id)
+    convert_video(original_video_path, converted_video_360p, "640:360", message.chat.id, convert_msg.id)
 
     client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
     client.send_document(chat_id=message.chat.id, document=converted_video_360p, caption="Here is your 360p video!")
