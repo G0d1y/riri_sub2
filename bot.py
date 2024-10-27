@@ -310,11 +310,22 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
         '-disposition:s:0', 'default', output_file
     ])
 
+def low_qulity(input_path, output_path):
+    resolution = "256:144"
+    command = [
+        "ffmpeg", "-i", input_path,
+        "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "23", "-c:a", "copy", output_path
+    ]
+    process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
+
+    process.wait()
+
 def trim_video(input_file, output_file, duration=90):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file, 
         '-t', str(duration), '-c', 'copy', output_file
     ])
+    
 
 def get_aac_profile(video_file):
     try:
@@ -380,7 +391,11 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     trimmed_output_path = 'trimmed.mkv'
     trim_video(final_output_path, trimmed_output_path, duration=90)
-    client.send_document(chat_id, trimmed_output_path, caption= output_name + "\n" + trimmed_output_path, thumb="cover.jpg")
+    client.send_document(chat_id, trimmed_output_path, caption= output_name, thumb="cover.jpg")
+
+    trimmed_low_output_path = 'trimmed_low_quality.mkv'
+    low_qulity(trimmed_output_path, trimmed_low_output_path)
+    client.send_document(chat_id, trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
 
     client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
@@ -391,6 +406,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     os.remove(final_output_path)
     os.remove(full_output)
     os.remove(trimmed_output_path)
+    os.remove(trimmed_low_output_path)
 
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
