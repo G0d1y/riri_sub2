@@ -79,7 +79,8 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
         "ffmpeg", "-i", input_path,
         "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "23", "-c:a", "copy", output_path
     ]
-
+    last_update_time = time.time()
+    previous_message = ""
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
 
     while True:
