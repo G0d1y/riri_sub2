@@ -57,7 +57,6 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
     ]
 
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
-    print(process.stderr.readline())
 
     progress_pattern = re.compile(
         r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)kB\s+time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
@@ -67,15 +66,13 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
     previous_message = ""
 
     while True:
-        # Read the output line by line
         output = process.stderr.readline()
 
-        # Break the loop if the process has finished
         if output == '' and process.poll() is not None:
             break
 
         if output:
-            # Match the progress line
+            print(f"FFmpeg Output: {output.strip()}")  # Debug output
             match = progress_pattern.search(output)
             if match:
                 frame, fps, q, size, current_time, bitrate, speed = match.groups()
@@ -98,7 +95,6 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
                         previous_message = message_content
                     last_update_time = current_time
 
-    # Wait for the process to complete
     process.wait()
 
 @app.on_message(filters.text & filters.private)
