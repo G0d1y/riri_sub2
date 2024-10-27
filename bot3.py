@@ -4,6 +4,7 @@ import time
 import requests
 import shutil
 import subprocess
+import re
 from pyrogram import Client, filters
 
 with open('config3.json') as config_file:
@@ -51,20 +52,53 @@ def download_video(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
-def convert_video(input_path, output_path, resolution):
+def convert_video(input_path, output_path, resolution, chat_id, message_id):
     command = [
         "ffmpeg", "-i", input_path,
         "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "23", "-c:a", "copy", output_path
     ]
-    subprocess.run(command, check=True)
+
+    process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
+
+    progress_pattern = re.compile(
+        r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)kB\s+time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
+    )
+
+    last_update_time = time.time()
+    previous_message = ""
+
+    for line in process.stderr:
+        # Match the progress line
+        match = progress_pattern.search(line)
+        if match:
+            frame, fps, q, size, current_time, bitrate, speed = match.groups()
+
+            message_content = (
+                f"تبدیل ویدیو: \n"
+                f"فریم: {frame}\n"
+                f"FPS: {fps}\n"
+                f"کیفیت: {q}\n"
+                f"اندازه: {size} KiB\n"
+                f"زمان: {current_time}\n"
+                f"بیت‌ریت: {bitrate} kbits/s\n"
+                f"سرعت: {speed}x"
+            )
+
+            current_time = time.time()
+            if current_time - last_update_time >= 1:
+                if message_content != previous_message:
+                    app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
+                    previous_message = message_content
+                last_update_time = current_time
+
+    process.wait()
 
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
     video_link = message.text
     original_video_path = os.path.join("original_540p_video.mkv")
     
-    message.reply("Starting video download...")
-    msg = message.reply("Downloading video...")
+    msg = message.reply("درحال دانلود...")
     
     for output_file in ["video_480p.mkv", "video_360p.mkv" , "original_540p_video.mkv"]:
         if os.path.exists(output_file):
@@ -76,9 +110,10 @@ def handle_video_link(client, message):
     converted_video_480p = os.path.join("video_480p.mkv")
     converted_video_360p = os.path.join("video_360p.mkv")
 
+    convert_msg = message.reply("درحال پردازش ویدیو...")
 
-    convert_video(original_video_path, converted_video_480p, "854:480")
-    convert_video(original_video_path, converted_video_360p, "640:360")
+    convert_video(original_video_path, converted_video_480p, "854:480" , convert_msg.id)
+    convert_video(original_video_path, converted_video_360p, "640:360" , convert_msg.id)
 
     client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
     client.send_document(chat_id=message.chat.id, document=converted_video_360p, caption="Here is your 360p video!")
