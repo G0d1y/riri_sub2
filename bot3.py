@@ -19,7 +19,7 @@ app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=b
 download_dir = "downloads"
 os.makedirs(download_dir, exist_ok=True)
 
-def download_video(url, filename, chat_id, message_id):
+async def download_video(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
@@ -49,7 +49,7 @@ def download_video(url, filename, chat_id, message_id):
                 )
                 
                 if message_content != previous_message:
-                    app.edit_message_text(chat_id, message_id, message_content)
+                    await app.edit_message_text(chat_id, message_id, message_content)
                     previous_message = message_content
                 last_update_time = current_time
 
