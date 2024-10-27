@@ -27,6 +27,7 @@ def download_video(url, filename, chat_id, message_id):
     with open(filename, 'wb') as f:
         last_update_time = time.time()
         previous_message = ""
+        
         for data in response.iter_content(chunk_size=1024):
             f.write(data)
             downloaded += len(data)
@@ -48,7 +49,7 @@ def download_video(url, filename, chat_id, message_id):
                 )
                 
                 if message_content != previous_message:
-                    app.edit_message_text(chat_id, message_id, message_content)
+                    app.loop.create_task(app.edit_message_text(chat_id, message_id, message_content))
                     previous_message = message_content
                 last_update_time = current_time
 
