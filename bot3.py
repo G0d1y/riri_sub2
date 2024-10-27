@@ -58,10 +58,9 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
         "-vf", f"scale={resolution}", "-preset", "veryfast", "-crf", "23", "-c:a", "copy", output_path
     ]
 
-    # Use Popen to capture stderr for progress updates
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
-    print(process)
-    # Regular expression to match ffmpeg progress lines
+    print(process.stderr.decode())
+
     progress_pattern = re.compile(
         r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)kB\s+time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
     )
