@@ -50,6 +50,30 @@ def download_video(url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
 
+def parse_ffmpeg_output(output_line):
+    progress_pattern = re.compile(
+        r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)KiB\s+'
+        r'time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
+    )
+    
+    match = progress_pattern.search(output_line)
+    if match:
+        frame, fps, q, size, current_time, bitrate, speed = match.groups()
+
+        message_content = (
+            f"Processing video:\n"
+            f"Frame: {frame}\n"
+            f"FPS: {fps}\n"
+            f"Quality: {q}\n"
+            f"Size: {size} KiB\n"
+            f"Time: {current_time}\n"
+            f"Bitrate: {bitrate} kbits/s\n"
+            f"Speed: {speed}x"
+        )
+        
+        return message_content
+    return None
+
 def convert_video(input_path, output_path, resolution, chat_id, message_id):
     command = [
         "ffmpeg", "-i", input_path,
@@ -58,49 +82,23 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
 
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
 
-    progress_pattern = re.compile(
-        r'frame=\s*(\d+)\s+fps=\s*([\d\.]+)\s+q=\s*([\d\.]+)\s+size=\s*([\d\.]+)kB\s+time=([\d\:\.]+)\s+bitrate=\s*([\d\.]+)kbits/s\s+speed=\s*([\d\.]+)x'
-    )
-
-    last_update_time = time.time()
-    previous_message = ""
-
     while True:
         output = process.stderr.readline()
-
         if output == '' and process.poll() is not None:
             break
-
+        
         if output:
-            print(f"FFmpeg Output: {output.strip()}")  # Debug output
-            match = progress_pattern.search(output)
-            if match:
-                frame, fps, q, size, current_time, bitrate, speed = match.groups()
-
-                message_content = (
-                    f"Processing video:\n"
-                    f"Frame: {frame}\n"
-                    f"FPS: {fps}\n"
-                    f"Quality: {q}\n"
-                    f"Size: {size} KiB\n"
-                    f"Time: {current_time}\n"
-                    f"Bitrate: {bitrate} kbits/s\n"
-                    f"Speed: {speed}x"
-                )
-
-                print(f"Message Content: {message_content}")
-
+            message_content = parse_ffmpeg_output(output.strip())
+            if message_content:
                 current_time = time.time()
                 if current_time - last_update_time >= 1:  
                     if message_content != previous_message:
-                        print("Updating Telegram message...")
-                        # Uncomment the next line if using Telegram bot:
-                        # app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
+                        app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
                         previous_message = message_content
                         last_update_time = current_time
-                    else:
-                        print("Message content has not changed, skipping update.")
+
     process.wait()
+
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
     video_link = message.text
