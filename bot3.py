@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 from aiohttp import ClientSession
+import shutil
 from pyrogram import Client, filters
 with open('config3.json') as config_file:
     config = json.load(config_file)
@@ -45,16 +46,35 @@ async def handle_video_link(client, message):
         await message.reply("Failed to download video. Please check the link.")
         return
 
-    await message.reply("Converting to 480p and 360p...")
+    if not os.path.exists(download_dir):
+        os.makedirs(download_dir)
+        print(f"Created directory: {download_dir}")
+    else:
+        for filename in os.listdir(download_dir):
+            file_path = os.path.join(download_dir, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.remove(file_path)
+                    print(f"Deleted file: {file_path}")
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+                    print(f"Deleted directory: {file_path}")
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
+
     converted_video_480p = os.path.join(download_dir, "video_480p.mp4")
+    converted_video_360p = os.path.join(download_dir, "video_360p.mp4")
 
     await asyncio.gather(
-        convert_video(original_video_path, converted_video_480p, "854:480")
+        convert_video(original_video_path, converted_video_480p, "854:480"),
+        convert_video(original_video_path, converted_video_360p, "640:360")
     )
 
     await client.send_document(chat_id=message.chat.id, documnet=converted_video_480p, caption="Here is your 480p video!")
+    await client.send_document(chat_id=message.chat.id, documnet=converted_video_360p, caption="Here is your 360p video!")
 
     os.remove(original_video_path)
     os.remove(converted_video_480p)
+    os.remove(converted_video_360p)
 
 app.run()

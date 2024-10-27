@@ -25,7 +25,9 @@ video_queue = queue.Queue()
 video_tasks = []
 admins = [5429433533 , 6459990242]
 user_state = {}
+
 DOWNLOAD_DIRECTORY = "./"
+
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
     exclude_files = {'trailer.mkv'}
@@ -82,7 +84,13 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     processing_start_time = time.time()
     
     shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
-    process_videos(video_file, 'trailer.mkv', full_output)
+    aac_profile = get_aac_profile(video_file)
+    if aac_profile == "trailer.mkv":
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد")
+    if aac_profile == "trailer2.mkv":
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد")
+
+    process_videos(video_file, aac_profile, full_output)
     final_output_path = f'{output_name}.mkv'
     add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
     trimmed_output_path = 'trimmed.mkv'
@@ -217,7 +225,6 @@ def create_ts_file(input_video, output_file):
         print(f"Error: {input_video} not found.")
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
-    """Concatenate trailer.ts and downloaded.ts into final_output."""
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
             with open('concat_list.txt', 'w') as f:
@@ -243,7 +250,6 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             print(f"Error: {trailer_ts} not found.")
 
 def process_videos(downloaded_video, trailer_video, final_output):
-    """Process videos to create and concatenate them."""
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
 
@@ -310,6 +316,36 @@ def trim_video(input_file, output_file, duration=90):
         '-t', str(duration), '-c', 'copy', output_file
     ])
 
+def get_aac_profile(video_file):
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name,profile', 
+             '-of', 'json', video_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        probe = json.loads(result.stdout)
+        
+        audio_stream = next((stream for stream in probe.get('streams', []) if stream['codec_name'] == 'aac'), None)
+        
+        if not audio_stream:
+            print("No AAC audio stream found.")
+            return None
+
+        profile = audio_stream.get('profile', '').lower()
+        if 'lc' in profile:
+            return "trailer2.mkv"
+        elif 'he' in profile:
+            return "trailer.mkv"
+        else:
+            return "trailer2.mkv"
+
+    except Exception as e:
+        print("Error:", e)
+        return None
+
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
         client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
@@ -325,8 +361,13 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
     download_file(subtitle_link, output_name + '_subtitle.srt', chat_id, message_id)
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
-
-    process_videos(downloaded, 'trailer.mkv', full_output)
+    
+    aac_profile = get_aac_profile(downloaded)
+    if aac_profile == "trailer.mkv":
+        client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد")
+    if aac_profile == "trailer2.mkv":
+        client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد")
+    process_videos(downloaded, aac_profile, full_output)
 
     processing_start_time = time.time()
 
@@ -377,7 +418,7 @@ def process_video_queue():
             continue
 
 threading.Thread(target=process_video_queue, daemon=True).start()
-
+  
 @app.on_message(filters.photo & filters.private)
 async def handle_cover(client, message):
     try:
