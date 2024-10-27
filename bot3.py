@@ -72,11 +72,11 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
     while True:
         # Read the output line by line
         output = process.stderr.readline()
-        
+
         # Break the loop if the process has finished
         if output == '' and process.poll() is not None:
             break
-        
+
         if output:
             # Match the progress line
             match = progress_pattern.search(output)
@@ -103,7 +103,7 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
 
     # Wait for the process to complete
     process.wait()
-    
+      
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
     video_link = message.text
