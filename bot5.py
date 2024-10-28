@@ -1,13 +1,9 @@
 import os
-import queue
 import requests
 import subprocess
 import json
-import threading
-import time
-from pysrt import SubRipTime , SubRipItem
-import pysrt
 from pyrogram import Client, filters
+
 with open('config2.json') as config_file:
     config = json.load(config_file)
 
@@ -33,13 +29,12 @@ def handle_video_link(client, message):
 
         # Send the ffprobe output back to the user
         if ffprobe_output:
-            if len(ffprobe_output) > 4096:
-                # Option 1: Send as multiple messages
-                for i in range(0, len(ffprobe_output), 4096):
-                    client.send_message(message.chat.id, ffprobe_output[i:i + 4096])
-            else:
-                # Option 2: Send as a single message
-                client.send_message(message.chat.id, ffprobe_output)
+            # Send as a document
+            with open("ffprobe_output.txt", "w") as f:
+                f.write(ffprobe_output)
+            client.send_document(message.chat.id, "ffprobe_output.txt")
+            os.remove("ffprobe_output.txt")  # Clean up the file after sending
+
         else:
             client.send_message(message.chat.id, "Error processing the video link.")
     else:
@@ -47,8 +42,14 @@ def handle_video_link(client, message):
 
 def run_ffprobe(video_link):
     try:
-        # Run ffprobe command
-        command = ["ffprobe", "-v", "error", "-show_format", "-show_streams", video_link]
+        # Run ffprobe command excluding subtitle streams
+        command = [
+            "ffprobe", 
+            "-v", "error", 
+            "-show_format", 
+            "-select_streams", "v:a",  # Only select video and audio streams
+            video_link
+        ]
         print(f"Running command: {' '.join(command)}")  # Print the command for debugging
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
