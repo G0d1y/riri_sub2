@@ -92,3 +92,9 @@ async def download_file(client, url, filename, chat_id, message_id):
     
     print("Download completed.")
     return filename
+
+async def handle_callback_query(client, callback_query):
+    global cancel_event
+    if callback_query.data.startswith("cancel:"):
+        cancel_event.set()
+        await client.answer_callback_query(callback_query.id, "Download cancelled.")

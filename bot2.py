@@ -32,12 +32,6 @@ user_state = {}
 
 ongoing_downloads = {}
 
-async def handle_callback_query(client: Client, callback_query):
-    global cancel_event
-    if callback_query.data.startswith("cancel:"):
-        cancel_event.set()  # Signal cancellation
-        await client.answer_callback_query(callback_query.id, "Download cancelled.")
-        
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
     exclude_files = {'trailer.mkv' , 'trailer2.mkv'}
