@@ -32,25 +32,26 @@ user_state = {}
 
 ongoing_downloads = {}
 
-@app.on_callback_query(filters.regex(r"^cancel_download_\d+_.+"))
-async def cancel_download(client: Client, callback_query: CallbackQuery):
-    _, chat_id, file_name = callback_query.data.split("_", 2)
-    chat_id = int(chat_id)
+@app.on_callback_query(filters.regex(r"^cancel_\d+"))
+async def cancel_download(client, callback_query: CallbackQuery):
+    _, message_id = callback_query.data.split("_", 1)
+    message_id = int(message_id)
 
-    if file_name in ongoing_downloads:
-        ongoing_downloads[file_name]["cancel_event"].set()  # Trigger cancellation
+    if message_id in ongoing_downloads:
+        ongoing_downloads[message_id]["cancel_event"].set()  # Trigger cancellation
         await client.edit_message_text(
-            chat_id=chat_id,
-            message_id=ongoing_downloads[file_name]["message_id"],
+            chat_id=callback_query.message.chat.id,
+            message_id=message_id,
             text="دانلود لغو شد!"
         )
 
         # Clean up temporary file if partially downloaded
-        if os.path.exists(ongoing_downloads[file_name]["file_path"]):
-            os.remove(ongoing_downloads[file_name]["file_path"])
+        file_path = ongoing_downloads[message_id]["file_path"]
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
         # Remove from ongoing downloads
-        del ongoing_downloads[file_name]
+        del ongoing_downloads[message_id]
 
     await callback_query.answer("دانلود لغو شد!")
 

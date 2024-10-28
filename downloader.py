@@ -17,7 +17,7 @@ async def download_document(client, document, file_name, chat_id):
 
     progress_message = await client.send_message(chat_id, "دانلود آغاز شد...", 
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("لغو", callback_data=f"cancel_download_{chat_id}_{file_name}")]
+            [InlineKeyboardButton("لغو", callback_data=f"cancel_{progress_message.id}")]
         ])
     )
 
@@ -70,7 +70,7 @@ async def download_file(client, url, filename, chat_id):
         chat_id, 
         "دانلود آغاز شد...",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("لغو", callback_data=f"cancel_download_{chat_id}_{filename}")]
+            [InlineKeyboardButton("لغو", callback_data=f"cancel_{progress_message.id}")]
         ])
     )
     message_id = progress_message.id
