@@ -14,20 +14,6 @@ async def download_document(client, document, file_name, chat_id, message_id):
     downloaded = 0
     start_time = time.time()
 
-    # Send an initial message and retrieve its ID
-    progress_message = await client.send_message(chat_id, "دانلود آغاز شد...")
-    message_id = progress_message.id
-
-    # Add the "Cancel" button after getting message_id
-    await client.edit_message_reply_markup(
-        chat_id,
-        message_id,
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")
-        ]])
-    )
-
-    # Initialize cancel event
     cancel_event = asyncio.Event()
     ongoing_downloads[message_id] = {
         "cancel_event": cancel_event,
@@ -67,7 +53,7 @@ async def download_document(client, document, file_name, chat_id, message_id):
         return file_path
     except asyncio.CancelledError:
         await client.edit_message_text(chat_id, message_id, "دانلود لغو شد!")
-        os.remove(file_path)  # Remove incomplete file
+        os.remove(file_path)
         del ongoing_downloads[message_id]
         return None
     except Exception as e:
@@ -81,19 +67,6 @@ async def download_file(client, url, filename, chat_id, message_id):
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
     start_time = time.time()
-
-    # Send initial message to get the message ID
-    progress_message = await client.send_message(chat_id, "دانلود آغاز شد...")
-    message_id = progress_message.id
-
-    # Add the "Cancel" button after getting message_id
-    await client.edit_message_reply_markup(
-        chat_id,
-        message_id,
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")
-        ]])
-    )
 
     cancel_event = ongoing_downloads.get(message_id, {}).get("cancel_event")
 
@@ -134,13 +107,12 @@ async def download_file(client, url, filename, chat_id, message_id):
     del ongoing_downloads[message_id]
     return filename
 
-# Add your callback handler for handling the "cancel" callback data
 async def handle_callback(client, callback_query):
     data = callback_query.data
     if data.startswith("cancel:"):
         message_id = int(data.split(":")[1])
         if message_id in ongoing_downloads:
-            ongoing_downloads[message_id]["cancel_event"].set()  # Set the cancel event
+            ongoing_downloads[message_id]["cancel_event"].set()
             await client.answer_callback_query(callback_query.id, "لغو شد!")
         else:
             await client.answer_callback_query(callback_query.id, "هیچ دانلودی در حال انجام نیست.")
