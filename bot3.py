@@ -5,7 +5,7 @@ import requests
 import subprocess
 import re
 from pyrogram import Client, filters
-with open('config3.json') as config_file:
+with open('config2.json') as config_file:
     config = json.load(config_file)
 
 api_id = int(config['api_id'])
