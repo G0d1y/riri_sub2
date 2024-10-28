@@ -10,7 +10,7 @@ from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery
 from downloader import download_file , download_document , cancel_event
 from ffmpeg import process_videos , shift_subtitles , add_soft_subtitle , trim_video , get_aac_profile , low_qulity
-
+import psutil
 
 with open('config.json') as config_file:
     config = json.load(config_file)
@@ -247,6 +247,19 @@ async def handle_callback_query(client, callback_query):
     global cancel_event
     if callback_query.data.startswith("cancel:"):
         cancel_event.set()
+        stop_ffmpeg_processes()
         await client.answer_callback_query(callback_query.id, "Download cancelled.")
+
+
+def stop_ffmpeg_processes():
+    """Stops all running FFmpeg processes."""
+    try:
+        for proc in psutil.process_iter(['pid', 'name']):
+            if proc.info['name'] == 'ffmpeg':
+                proc.terminate()
+                proc.wait()
+                print(f"Stopped FFmpeg process with PID: {proc.info['pid']}")
+    except Exception as e:
+        print(f"Error stopping FFmpeg processes: {e}")
 
 app.run()
