@@ -104,10 +104,8 @@ async def handle_document(client, message):
     
 @app.on_message(filters.text)
 async def handle_output_name(client, message):
-    bot_info = await client.get_me()
-    bot_id = bot_info.id
-
-    if message.from_user.id == bot_id:
+    if message.chat.id not in admins:
+        await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
         output_name = message.text.strip()
@@ -133,9 +131,6 @@ async def handle_output_name(client, message):
         else:
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else: 
-        if message.chat.id not in admins:
-            await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
-            return
         tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
         for i in range(0, len(tasks), 3):
