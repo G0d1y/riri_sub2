@@ -242,4 +242,11 @@ async def handle_cover(client, message):
     except Exception as e:
         await message.reply(f"Error handling cover image: {str(e)}")
 
+@app.on_callback_query()
+async def handle_callback_query(client, callback_query):
+    global cancel_event
+    if callback_query.data.startswith("cancel:"):
+        cancel_event.set()
+        await client.answer_callback_query(callback_query.id, "Download cancelled.")
+        
 app.run()
