@@ -64,7 +64,17 @@ async def download_document(client, document, file_name, chat_id):
         print(f"Error downloading file: {e}")
         return None
 
-async def download_file(client, url, filename, chat_id, message_id):
+async def download_file(client, url, filename, chat_id):
+    # Send initial message with "Cancel" button
+    progress_message = await client.send_message(
+        chat_id, 
+        "دانلود آغاز شد...",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("لغو", callback_data=f"cancel_download_{chat_id}_{filename}")]
+        ])
+    )
+    message_id = progress_message.id
+    
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
@@ -107,4 +117,5 @@ async def download_file(client, url, filename, chat_id, message_id):
                 last_update_time = current_time
 
     del ongoing_downloads[filename]
+    await client.edit_message_text(chat_id, message_id, "دانلود کامل شد!")
     return filename
