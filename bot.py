@@ -104,6 +104,7 @@ async def handle_document(client, message):
     
 @app.on_message(filters.text)
 async def handle_output_name(client, message):
+    print(message.text)
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
