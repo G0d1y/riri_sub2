@@ -33,7 +33,7 @@ ongoing_downloads = {}
 def remove_files(client , message):
     exclude_files = {'x264_HE.mkv' , 'x264_LC.mkv' , 'x265_HE.mkv' , 'x265_LC.mkv'}
 
-    directory = os.getcwd()
+    directory = "./"
 
     for filename in os.listdir(directory):
         if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
@@ -141,7 +141,7 @@ async def handle_output_name(client, message):
     else: 
         if not video_queue.empty():
             await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
-            
+
         tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
         for i in range(0, len(tasks), 3):
