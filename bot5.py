@@ -66,19 +66,24 @@ def format_ffprobe_output(output):
 
     # Add FORMAT section
     relevant_lines.append("[FORMAT]")
+    duration = "N/A"  # Default value for duration
     title = ""
     encoded_by = ""
-    
-    for line in lines:
-        if line.startswith("duration="):  # Include duration
-            relevant_lines.append(line)
-        elif line.startswith("TAG:title="):  # Capture title
-            title = line.split("=")[1]  # Get title value
-        elif line.startswith("TAG:ENCODED_BY="):  # Capture encoded by
-            encoded_by = line.split("=")[1]  # Get encoded by value
+    encoder = ""
 
+    for line in lines:
+        if line.startswith("duration="):  # Check for duration
+            duration = line  # Capture the duration line
+        elif line.startswith("TAG:title="):  # Capture title
+            title = f"TAB:{line.split('=')[1]}"  # Get title value with TAG prefix
+        elif line.startswith("TAG:ENCODED_BY="):  # Capture encoded by
+            encoded_by = f"TAB:{line.split('=')[1]}"  # Get encoded by value with TAG prefix
+        elif line.startswith("TAG:ENCODER="):  # Capture encoder
+            encoder = f"TAB:{line.split('=')[1]}"  # Get encoder value with TAG prefix
+
+    relevant_lines.append(f"duration={duration.split('=')[1]}")  # Add duration
     relevant_lines.append("[/FORMAT]")
-    
+
     # Add stream index and codec details
     relevant_lines.append("index=0")
     for line in lines:
@@ -87,9 +92,13 @@ def format_ffprobe_output(output):
            line.startswith("width=") or line.startswith("height="):
             relevant_lines.append(line)
 
-    # Append title and encoded by information
-    relevant_lines.append(f"title={title}")  # Add title
-    relevant_lines.append(f"encoded_by={encoded_by}")  # Add encoded by
+    # Append title and encoded by information with correct TAG format
+    if title:
+        relevant_lines.append(title)  # Add title
+    if encoded_by:
+        relevant_lines.append(encoded_by)  # Add encoded by
+    if encoder:
+        relevant_lines.append(encoder)  # Add encoder
 
     return "\n".join(relevant_lines)
 
