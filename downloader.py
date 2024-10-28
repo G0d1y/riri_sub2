@@ -58,7 +58,6 @@ async def download_file(client, url, filename, chat_id, message_id):
         
         for data in response.iter_content(chunk_size=1024):
             if cancel_event.is_set():
-                cancel_event.clear()
                 print("Download cancelled.")
                 return None
             

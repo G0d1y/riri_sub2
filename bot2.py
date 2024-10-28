@@ -162,43 +162,47 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     asyncio.run(download_file(client, video_link, downloaded, chat_id , message_id))
     asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle.srt', chat_id , message_id))
-    processing_start_time = time.time()
+    if cancel_event.is_set() == False:
+        processing_start_time = time.time()
 
-    shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
+        shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
     
-    aac_profile = get_aac_profile(downloaded)
-    if aac_profile == "trailer.mkv":
-        client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد")
-    if aac_profile == "trailer2.mkv":
-        client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد")
-    process_videos(downloaded, aac_profile, full_output)
+        aac_profile = get_aac_profile(downloaded)
+        if aac_profile == "trailer.mkv":
+            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد")
+        if aac_profile == "trailer2.mkv":
+            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد")
+        process_videos(downloaded, aac_profile, full_output)
 
 
-    final_output_path = f'{output_name}.mkv'
-    add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
+        final_output_path = f'{output_name}.mkv'
+        add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
 
-    processing_end_time = time.time()
-    processing_time = processing_end_time - processing_start_time
-    client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
+        processing_end_time = time.time()
+        processing_time = processing_end_time - processing_start_time
+        client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
-    trimmed_output_path = 'trimmed.mkv'
-    trim_video(final_output_path, trimmed_output_path, duration=90)
-    client.send_document(chat_id, trimmed_output_path, caption= output_name, thumb="cover.jpg")
+        trimmed_output_path = 'trimmed.mkv'
+        trim_video(final_output_path, trimmed_output_path, duration=90)
+        client.send_document(chat_id, trimmed_output_path, caption= output_name, thumb="cover.jpg")
 
-    trimmed_low_output_path = 'trimmed_low_quality.mkv'
-    low_qulity(trimmed_output_path, trimmed_low_output_path)
-    client.send_document(chat_id, trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
+        trimmed_low_output_path = 'trimmed_low_quality.mkv'
+        low_qulity(trimmed_output_path, trimmed_low_output_path)
+        client.send_document(chat_id, trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
 
-    client.send_document(chat_id, final_output_path, thumb="cover.jpg")
-    client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
+        client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+        client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
-    os.remove(downloaded)
-    os.remove(output_name + '_subtitle.srt')
-    os.remove(shifted_subtitle_file)
-    os.remove(final_output_path)
-    os.remove(full_output)
-    os.remove(trimmed_output_path)
-    os.remove(trimmed_low_output_path)
+        os.remove(downloaded)
+        os.remove(output_name + '_subtitle.srt')
+        os.remove(shifted_subtitle_file)
+        os.remove(final_output_path)
+        os.remove(full_output)
+        os.remove(trimmed_output_path)
+        os.remove(trimmed_low_output_path)
+    else:
+        cancel_event.clear()
+        return None
 
 @app.on_message(filters.command("start"))
 def start_processing(client, message):
@@ -247,19 +251,7 @@ async def handle_callback_query(client, callback_query):
     global cancel_event
     if callback_query.data.startswith("cancel:"):
         cancel_event.set()
-        stop_ffmpeg_processes()
         await client.answer_callback_query(callback_query.id, "Download cancelled.")
 
-
-def stop_ffmpeg_processes():
-    """Stops all running FFmpeg processes."""
-    try:
-        for proc in psutil.process_iter(['pid', 'name']):
-            if proc.info['name'] == 'ffmpeg':
-                proc.terminate()
-                proc.wait()
-                print(f"Stopped FFmpeg process with PID: {proc.info['pid']}")
-    except Exception as e:
-        print(f"Error stopping FFmpeg processes: {e}")
 
 app.run()
