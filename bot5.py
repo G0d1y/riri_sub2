@@ -1,5 +1,4 @@
 import os
-import requests
 import subprocess
 import json
 from pyrogram import Client, filters
@@ -64,24 +63,11 @@ def format_ffprobe_output(output):
     lines = output.splitlines()
     relevant_lines = []
 
-    # Add FORMAT section
+    # Add FORMAT section with only duration
     relevant_lines.append("[FORMAT]")
-    duration = "N/A"  # Default value for duration
-    title = ""
-    encoded_by = ""
-    encoder = ""
-
     for line in lines:
         if line.startswith("duration="):  # Check for duration
-            duration = line  # Capture the duration line
-        elif line.startswith("TAG:title="):  # Capture title
-            title = f"TAB:{line.split('=')[1]}"  # Get title value with TAG prefix
-        elif line.startswith("TAG:ENCODED_BY="):  # Capture encoded by
-            encoded_by = f"TAB:{line.split('=')[1]}"  # Get encoded by value with TAG prefix
-        elif line.startswith("TAG:ENCODER="):  # Capture encoder
-            encoder = f"TAB:{line.split('=')[1]}"  # Get encoder value with TAG prefix
-
-    relevant_lines.append(f"duration={duration.split('=')[1]}")  # Add duration
+            relevant_lines.append(line)  # Capture the duration line
     relevant_lines.append("[/FORMAT]")
 
     # Add stream index and codec details
@@ -92,13 +78,12 @@ def format_ffprobe_output(output):
            line.startswith("width=") or line.startswith("height="):
             relevant_lines.append(line)
 
-    # Append title and encoded by information with correct TAG format
-    if title:
-        relevant_lines.append(title)  # Add title
-    if encoded_by:
-        relevant_lines.append(encoded_by)  # Add encoded by
-    if encoder:
-        relevant_lines.append(encoder)  # Add encoder
+    # Add title and encoder information
+    for line in lines:
+        if line.startswith("TAG:title="):  # Capture the title
+            relevant_lines.append(line)
+        elif line.startswith("TAG:ENCODED_BY="):  # Capture the encoder info
+            relevant_lines.append(line)
 
     return "\n".join(relevant_lines)
 
