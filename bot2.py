@@ -183,8 +183,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
             os.remove(output_file)
             print(f"Deleted existing file: {output_file}")
 
-    asyncio.run(download_file(client, video_link, downloaded, chat_id))
-    asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle.srt', chat_id))
+    asyncio.run(download_file(client, video_link, downloaded, chat_id , message_id))
+    asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle.srt', chat_id , message_id))
     processing_start_time = time.time()
 
     shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)

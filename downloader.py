@@ -8,7 +8,7 @@ from pyrogram import Client
 DOWNLOAD_DIRECTORY = "./"
 ongoing_downloads = {}
 
-async def download_document(client, document, file_name, chat_id):
+async def download_document(client, document, file_name, chat_id, message_id):
     file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name) 
     total_size = int(document.file_size) if document.file_size else 0
     downloaded = 0
@@ -53,7 +53,13 @@ async def download_document(client, document, file_name, chat_id):
                 f"سرعت: {speed:.2f} MB/s\n"
                 f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
             )
-            await client.edit_message_text(chat_id, message_id, message_content)
+            await client.edit_message_text(
+            chat_id,
+            message_id,
+            message_content,
+            reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("لغو", callback_data=f"cancel_{message_id}")]])
+            )
 
     try:
         await client.download_media(document, file_path, progress=progress)
@@ -71,21 +77,7 @@ async def download_document(client, document, file_name, chat_id):
         del ongoing_downloads[message_id]
         return None
 
-async def download_file(client, url, filename, chat_id):
-    progress_message = await client.send_message(
-        chat_id, 
-        "دانلود آغاز شد..."
-    )
-    message_id = progress_message.id
-
-    await client.edit_message_reply_markup(
-        chat_id,
-        message_id,
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("لغو", callback_data=f"cancel_{message_id}")]
-        ])
-    )
-
+async def download_file(client, url, filename, chat_id , message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
@@ -123,7 +115,13 @@ async def download_file(client, url, filename, chat_id):
                     f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
                 )
                 
-                await client.edit_message_text(chat_id, message_id, message_content)
+                await client.edit_message_text(
+                chat_id,
+                message_id,
+                message_content,
+                reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("لغو", callback_data=f"cancel_{message_id}")]])
+                )
                 last_update_time = current_time
 
     del ongoing_downloads[message_id]
