@@ -29,11 +29,7 @@ def handle_video_link(client, message):
 
         # Send the ffprobe output back to the user
         if ffprobe_output:
-            # Send as a document
-            with open("ffprobe_output.txt", "w") as f:
-                f.write(ffprobe_output)
-            client.send_document(message.chat.id, "ffprobe_output.txt")
-            os.remove("ffprobe_output.txt")  # Clean up the file after sending
+            client.send_message(message.chat.id, ffprobe_output)
         else:
             client.send_message(message.chat.id, "Error processing the video link.")
     else:
@@ -70,27 +66,30 @@ def format_ffprobe_output(output):
 
     # Add FORMAT section
     relevant_lines.append("[FORMAT]")
+    title = ""
+    encoded_by = ""
+    
     for line in lines:
-        if line.startswith("filename=") or line.startswith("nb_streams=") or \
-           line.startswith("nb_programs=") or line.startswith("format_name=") or \
-           line.startswith("format_long_name=") or line.startswith("start_time=") or \
-           line.startswith("duration=") or line.startswith("size=") or \
-           line.startswith("bit_rate=") or line.startswith("probe_score=") or \
-           line.startswith("TAG:title=") or line.startswith("TAG:ENCODED_BY=") or \
-           line.startswith("TAG:ENCODER="):
+        if line.startswith("duration="):  # Include duration
             relevant_lines.append(line)
+        elif line.startswith("TAG:title="):  # Capture title
+            title = line.split("=")[1]  # Get title value
+        elif line.startswith("TAG:ENCODED_BY="):  # Capture encoded by
+            encoded_by = line.split("=")[1]  # Get encoded by value
 
     relevant_lines.append("[/FORMAT]")
-
-    # Add stream index
+    
+    # Add stream index and codec details
     relevant_lines.append("index=0")
     for line in lines:
         if line.startswith("codec_name=") or line.startswith("codec_long_name=") or \
            line.startswith("profile=") or line.startswith("codec_type=") or \
-           line.startswith("codec_time_base=") or line.startswith("codec_tag_string=") or \
-           line.startswith("codec_tag=") or line.startswith("width=") or \
-           line.startswith("height="):
+           line.startswith("width=") or line.startswith("height="):
             relevant_lines.append(line)
+
+    # Append title and encoded by information
+    relevant_lines.append(f"title={title}")  # Add title
+    relevant_lines.append(f"encoded_by={encoded_by}")  # Add encoded by
 
     return "\n".join(relevant_lines)
 
