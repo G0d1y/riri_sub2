@@ -31,7 +31,7 @@ def handle_video_link(client, message):
         # Run ffprobe on the video link
         ffprobe_output = run_ffprobe(video_link)
         
-        # Send the ffprobe output back to the user
+        # Send the filtered ffprobe output back to the user
         if ffprobe_output:
             client.send_message(message.chat.id, ffprobe_output)
         else:
@@ -45,10 +45,22 @@ def run_ffprobe(video_link):
         command = ["ffprobe", "-v", "error", "-show_format", "-show_streams", video_link]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         
-        # Return ffprobe output
-        return result.stdout
+        # Parse the output to extract relevant information
+        return parse_ffprobe_output(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"FFprobe error: {e.stderr}")
         return None
+
+def parse_ffprobe_output(output):
+    # Initialize a list to store filtered output lines
+    filtered_output = []
     
+    # Split the output into lines and filter
+    for line in output.splitlines():
+        if "Input" in line or "Duration" in line or "bitrate" in line or "Stream" in line:
+            filtered_output.append(line.strip())
+    
+    # Join the filtered lines into a single string
+    return '\n'.join(filtered_output)
+
 app.run()
