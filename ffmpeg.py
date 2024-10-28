@@ -102,7 +102,7 @@ def low_qulity(input_path, output_path):
     resolution = "256:144"
     command = [
         "ffmpeg", "-i", input_path,
-        "-vf", f"scale={resolution}", "-preset", "ultrafast", "-crf", "40", "-c:a", "copy", output_path
+        "-vf", f"scale={resolution}", "-preset", "ultrafast", "-crf", "30", "-c:a", "copy", output_path
     ]
     process = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
 
