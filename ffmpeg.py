@@ -134,12 +134,43 @@ def get_aac_profile(video_file):
 
         profile = audio_stream.get('profile', '').lower()
         if 'lc' in profile:
-            return "trailer2.mkv"
+            codec = get_video_codec(video_file)
+            if codec == "x264":
+                return "x264_LC.mkv"
+            elif codec == "x265":
+                return "x265_LC.mkv"
         elif 'he' in profile:
-            return "trailer.mkv"
+            if codec == "x264":
+                return "x264_HE.mkv"
+            elif codec == "x265":
+                return "x265_HE.mkv"
         else:
-            return "trailer2.mkv"
+            return "x264_LC.mkv"
 
     except Exception as e:
         print("Error:", e)
         return None
+
+def get_video_codec(file_path):
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name', '-of', 'default=noprint_wrappers=1:nokey=1', file_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            raise ValueError("Error running ffprobe: " + result.stderr)
+
+        codec_name = result.stdout.strip()
+        
+        if codec_name == "h264":
+            return "x264"
+        elif codec_name == "hevc":
+            return "x265"
+        else:
+            return f"Unknown codec: {codec_name}"
+    
+    except Exception as e:
+        return f"Error: {str(e)}"
