@@ -35,7 +35,7 @@ ongoing_downloads = {}
 
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
-    exclude_files = {'trailer.mkv' , 'trailer2.mkv'}
+    exclude_files = {'x264_HE.mkv' , 'x264_LC.mkv' , 'x265_HE.mkv' , 'x265_LC.mkv'}
 
     directory = os.getcwd()
 
@@ -55,10 +55,14 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
             print(f"Deleted existing file: {output_file}")
     shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
     aac_profile = get_aac_profile(video_file)
-    if aac_profile == "trailer.mkv":
-        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد")
-    if aac_profile == "trailer2.mkv":
-        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد")
+    if aac_profile == "x264_HE.mkv":
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x264 تشخیص داده شد!")
+    if aac_profile == "x264_LC.mkv":
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد" + "\n" + "کدک ویدی x264 تشخیص داده شد!")
+    if aac_profile == "x265_HE.mkv":
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x265 تشخیص داده شد!")
+    if aac_profile == "x265_LC.mkv":
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد" + "\n" + "کدک ویدی x265 تشخیص داده شد!")
 
     process_videos(video_file, aac_profile, full_output)
     final_output_path = f'{output_name}.mkv'
