@@ -66,8 +66,8 @@ def format_ffprobe_output(output):
     # Add FORMAT section with only duration
     relevant_lines.append("[FORMAT]")
     for line in lines:
-        if line.startswith("duration="):  # Check for duration
-            relevant_lines.append(line)  # Capture the duration line
+        if line.startswith("duration="):  # Capture the duration line
+            relevant_lines.append(line)
     relevant_lines.append("[/FORMAT]")
 
     # Add stream index and codec details
@@ -78,12 +78,21 @@ def format_ffprobe_output(output):
            line.startswith("width=") or line.startswith("height="):
             relevant_lines.append(line)
 
-    # Add title and encoder information
+    # Check specifically for title and encoder tags
+    title_found, encoded_by_found = False, False
     for line in lines:
-        if line.startswith("TAG:title="):  # Capture the title
+        if "TAG:title=" in line and not title_found:  # Capture title
             relevant_lines.append(line)
-        elif line.startswith("TAG:ENCODED_BY="):  # Capture the encoder info
+            title_found = True
+        elif "TAG:ENCODED_BY=" in line and not encoded_by_found:  # Capture encoded_by
             relevant_lines.append(line)
+            encoded_by_found = True
+
+    # If title or encoder was not found, manually add placeholders
+    if not title_found:
+        relevant_lines.append("TAG:title=Unknown")
+    if not encoded_by_found:
+        relevant_lines.append("TAG:ENCODED_BY=Unknown")
 
     return "\n".join(relevant_lines)
 
