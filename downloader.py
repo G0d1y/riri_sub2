@@ -6,25 +6,31 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import Client
 
 DOWNLOAD_DIRECTORY = "./"
-ongoing_downloads = {}  # Dictionary to track ongoing downloads
+ongoing_downloads = {}
 
 async def download_document(client, document, file_name, chat_id):
-    file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name)
-    
+    file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name) 
     total_size = int(document.file_size) if document.file_size else 0
     downloaded = 0
     start_time = time.time()
 
-    progress_message = await client.send_message(chat_id, "دانلود آغاز شد...", 
+    # Send an initial message and retrieve its ID
+    progress_message = await client.send_message(chat_id, "دانلود آغاز شد...")
+    message_id = progress_message.id
+
+    # Add the "Cancel" button after getting message_id
+    await client.edit_message_reply_markup(
+        chat_id,
+        message_id,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("لغو", callback_data=f"cancel_{progress_message.id}")]
+            [InlineKeyboardButton("لغو", callback_data=f"cancel_{message_id}")]
         ])
     )
 
+    # Initialize cancel event
     cancel_event = asyncio.Event()
-    ongoing_downloads[file_name] = {
+    ongoing_downloads[message_id] = {
         "cancel_event": cancel_event,
-        "message_id": progress_message.id,
         "file_path": file_path
     }
 
@@ -33,10 +39,7 @@ async def download_document(client, document, file_name, chat_id):
         downloaded = current
         current_time = time.time()
         elapsed_time = current_time - start_time
-        
-        if cancel_event.is_set():
-            raise asyncio.CancelledError("Download cancelled by user")
-        
+
         if elapsed_time > 0:
             speed = (downloaded / (1024 * 1024)) / elapsed_time
             remaining_time = (total_size - downloaded) / (speed * 1024 * 1024) if speed > 0 else float('inf')
@@ -44,46 +47,53 @@ async def download_document(client, document, file_name, chat_id):
             speed = 0
             remaining_time = float('inf')
 
-        message_content = (
-            f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
-            f"سرعت: {speed:.2f} MB/s\n"
-            f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
-        )
-        await client.edit_message_text(chat_id, progress_message.id, message_content)
-    
+        if current_time - start_time >= 1:
+            message_content = (
+                f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
+                f"سرعت: {speed:.2f} MB/s\n"
+                f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
+            )
+            await client.edit_message_text(chat_id, message_id, message_content)
+
     try:
         await client.download_media(document, file_path, progress=progress)
-        await client.edit_message_text(chat_id, progress_message.id, "دانلود کامل شد!")
-        del ongoing_downloads[file_name]
+        await client.edit_message_text(chat_id, message_id, "دانلود کامل شد!")
+        del ongoing_downloads[message_id]
         return file_path
     except asyncio.CancelledError:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        await client.edit_message_text(chat_id, progress_message.id, "دانلود لغو شد!")
+        await client.edit_message_text(chat_id, message_id, "دانلود لغو شد!")
+        os.remove(file_path)
+        del ongoing_downloads[message_id]
+        return None
     except Exception as e:
         print(f"Error downloading file: {e}")
+        await client.edit_message_text(chat_id, message_id, "خطا در دانلود فایل!")
+        del ongoing_downloads[message_id]
         return None
 
 async def download_file(client, url, filename, chat_id):
-    # Send initial message with "Cancel" button
     progress_message = await client.send_message(
         chat_id, 
-        "دانلود آغاز شد...",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("لغو", callback_data=f"cancel_{progress_message.id}")]
-        ])
+        "دانلود آغاز شد..."
     )
     message_id = progress_message.id
-    
+
+    await client.edit_message_reply_markup(
+        chat_id,
+        message_id,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("لغو", callback_data=f"cancel_{message_id}")]
+        ])
+    )
+
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
     start_time = time.time()
 
     cancel_event = asyncio.Event()
-    ongoing_downloads[filename] = {
+    ongoing_downloads[message_id] = {
         "cancel_event": cancel_event,
-        "message_id": message_id,
         "file_path": filename
     }
 
@@ -116,6 +126,6 @@ async def download_file(client, url, filename, chat_id):
                 await client.edit_message_text(chat_id, message_id, message_content)
                 last_update_time = current_time
 
-    del ongoing_downloads[filename]
+    del ongoing_downloads[message_id]
     await client.edit_message_text(chat_id, message_id, "دانلود کامل شد!")
     return filename
