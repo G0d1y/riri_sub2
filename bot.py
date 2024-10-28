@@ -38,6 +38,7 @@ def remove_files(client , message):
     for filename in os.listdir(directory):
         if filename.endswith(('.mkv', '.srt', '.mp4')) and filename not in exclude_files:
             file_path = os.path.join(directory, filename)
+            print(file_path)
             os.remove(file_path)
     client.send_message(message.chat.id, "فایل های قبلی حذف شدند")
 
@@ -104,6 +105,11 @@ async def handle_document(client, message):
     
 @app.on_message(filters.text)
 async def handle_output_name(client, message):
+    bot_info = await client.get_me()
+    bot_id = bot_info.id
+
+    if message.from_user.id == bot_id:
+        return
     print(message.text)
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
