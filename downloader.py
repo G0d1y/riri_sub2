@@ -1,9 +1,11 @@
 import requests
 import time
 import os
+import asyncio
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import pyrogram
 DOWNLOAD_DIRECTORY = "./"
+
+cancel_event = asyncio.Event()
 
 async def download_document(client, document, file_name, chat_id, message_id):
     file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name) 
@@ -50,24 +52,15 @@ async def download_file(client, url, filename, chat_id, message_id):
     downloaded = 0
     start_time = time.time()
     
-    # Create a cancellation flag
-    cancellation_flag = False
-
-    async def cancel_download():
-        nonlocal cancellation_flag
-        cancellation_flag = True
-
-    # Listen for the cancellation request (e.g., from a callback query)
-    client.add_handler(pyrogram.CallbackQueryHandler(cancel_download, pattern=f"cancel:{message_id}"))
-
     with open(filename, 'wb') as f:
         last_update_time = time.time()
         previous_message = ""
         
         for data in response.iter_content(chunk_size=1024):
-            if cancellation_flag:  # Check if cancellation is requested
-                break
-                
+            if cancel_event.is_set():  # Check if the download is cancelled
+                print("Download cancelled.")
+                return None
+            
             f.write(data)
             downloaded += len(data)
             current_time = time.time()
@@ -97,12 +90,5 @@ async def download_file(client, url, filename, chat_id, message_id):
                     previous_message = message_content
                 last_update_time = current_time
     
-    # Clean up if download is cancelled
-    if cancellation_flag:
-        # Optionally remove the incomplete file
-        import os
-        if os.path.exists(filename):
-            os.remove(filename)
-        await client.edit_message_text(chat_id, message_id, "دانلود لغو شد.")
-    else:
-        return filename
+    print("Download completed.")
+    return filename
