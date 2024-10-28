@@ -110,7 +110,8 @@ async def handle_output_name(client, message):
 
     if message.from_user.id == bot_id:
         return
-    print(message.text)
+
+    print("test")
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
