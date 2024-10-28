@@ -133,8 +133,8 @@ def get_aac_profile(video_file):
             return None
 
         profile = audio_stream.get('profile', '').lower()
+        codec = get_video_codec(video_file)
         if 'lc' in profile:
-            codec = get_video_codec(video_file)
             if codec == "x264":
                 return "x264_LC.mkv"
             elif codec == "x265":
