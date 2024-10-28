@@ -115,19 +115,19 @@ def handle_video_link(client, message):
     download_video(video_link, original_video_path, message.chat.id, msg.id)
 
     converted_video_480p = os.path.join("video_480p.mkv")
-    converted_video_360p = os.path.join("video_360p.mkv")
+    #converted_video_360p = os.path.join("video_360p.mkv")
 
     convert_msg = message.reply("درحال پردازش ویدیو...")
 
     convert_video(original_video_path, converted_video_480p, "854:480", message.chat.id, convert_msg.id)
-    convert_video(original_video_path, converted_video_360p, "640:360", message.chat.id, convert_msg.id)
+    #convert_video(original_video_path, converted_video_360p, "640:360", message.chat.id, convert_msg.id)
 
     client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
-    client.send_document(chat_id=message.chat.id, document=converted_video_360p, caption="Here is your 360p video!")
+    #client.send_document(chat_id=message.chat.id, document=converted_video_360p, caption="Here is your 360p video!")
 
     # Clean up
     os.remove(original_video_path)
     os.remove(converted_video_480p)
-    os.remove(converted_video_360p)
+    #os.remove(converted_video_360p)
 
 app.run()
