@@ -139,9 +139,6 @@ async def handle_output_name(client, message):
         else:
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else: 
-        if not video_queue.empty():
-            await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
-
         tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
         for i in range(0, len(tasks), 3):
