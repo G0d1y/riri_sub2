@@ -99,13 +99,12 @@ async def download_file(client, url, filename, chat_id, message_id):
                     f"سرعت: {speed:.2f} MB/s\n"
                     f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
                 )
-                
-            await client.edit_message_text(
-                chat_id,
-                message_id,
-                message_content,
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]])
-            )
+                await client.edit_message_text(
+                    chat_id,
+                    message_id,
+                    message_content,
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]])
+                )
             last_update_time = current_time
 
     del ongoing_downloads[filename]
