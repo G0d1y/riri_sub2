@@ -25,15 +25,21 @@ app = Client(
 @app.on_message(filters.text)
 def handle_video_link(client, message):
     video_link = message.text
-    
+
     # Check if the message is a valid video link (you can improve this validation)
     if video_link.startswith("http://") or video_link.startswith("https://"):
         # Run ffprobe on the video link
         ffprobe_output = run_ffprobe(video_link)
-        
+
         # Send the ffprobe output back to the user
         if ffprobe_output:
-            client.send_message(message.chat.id, ffprobe_output)
+            if len(ffprobe_output) > 4096:
+                # Option 1: Send as multiple messages
+                for i in range(0, len(ffprobe_output), 4096):
+                    client.send_message(message.chat.id, ffprobe_output[i:i + 4096])
+            else:
+                # Option 2: Send as a single message
+                client.send_message(message.chat.id, ffprobe_output)
         else:
             client.send_message(message.chat.id, "Error processing the video link.")
     else:
@@ -45,12 +51,11 @@ def run_ffprobe(video_link):
         command = ["ffprobe", "-v", "error", "-show_format", "-show_streams", video_link]
         print(f"Running command: {' '.join(command)}")  # Print the command for debugging
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-        
+
         # Return ffprobe output
         return result.stdout
     except subprocess.CalledProcessError as e:
         print(f"FFprobe error: {e.stderr}")  # Print detailed error output
         return None
-
     
 app.run()
