@@ -8,7 +8,7 @@ import time
 import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery
-from downloader import download_file , download_document
+from downloader import download_file , download_document , cancel_event
 from ffmpeg import process_videos , shift_subtitles , add_soft_subtitle , trim_video , get_aac_profile , low_qulity
 
 
@@ -248,5 +248,5 @@ async def handle_callback_query(client, callback_query):
     if callback_query.data.startswith("cancel:"):
         cancel_event.set()
         await client.answer_callback_query(callback_query.id, "Download cancelled.")
-        
+
 app.run()
