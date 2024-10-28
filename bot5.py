@@ -30,7 +30,7 @@ def handle_video_link(client, message):
     if video_link.startswith("http://") or video_link.startswith("https://"):
         # Download the video
         filename = "downloaded_video.mp4"  # You can adjust the file extension based on the content type
-        download_file(video_link, filename, message.chat.id, message.message_id)
+        download_file(video_link, filename, message.chat.id, message.id)
         
         # Run ffprobe on the downloaded video file
         ffprobe_output = run_ffprobe(filename)
