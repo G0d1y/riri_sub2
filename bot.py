@@ -139,6 +139,9 @@ async def handle_output_name(client, message):
         else:
             await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
     else: 
+        if not video_queue.empty():
+            await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
+            
         tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
         for i in range(0, len(tasks), 3):
@@ -150,8 +153,7 @@ async def handle_output_name(client, message):
                 if video_link and subtitle_link and output_name:
                     video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
 
-        if not video_queue.empty():
-            await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
+
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
