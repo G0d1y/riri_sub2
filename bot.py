@@ -7,7 +7,7 @@ import asyncio
 from pyrogram import Client, filters
 from downloader import download_file , download_document , cancel_event
 from ffmpeg import process_videos , shift_subtitles , add_soft_subtitle , trim_video , get_aac_profile , low_qulity
-
+import zipfile
 with open('config.json') as config_file:
     config = json.load(config_file)
 
@@ -103,6 +103,14 @@ async def handle_document(client, message):
         user_state[message.chat.id]["step"] = "waiting_for_output_name"
         return
     
+def extract_first_srt(zip_path):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        for file in zip_ref.namelist():
+            if file.endswith('.srt'):
+                zip_ref.extract(file, 'temp_subs')
+                return os.path.join('temp_subs', file)
+    return None
+
 @app.on_message(filters.text)
 async def handle_output_name(client, message):
     bot_info = await client.get_me()
@@ -115,44 +123,33 @@ async def handle_output_name(client, message):
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
-    if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
-        output_name = message.text.strip()
-        if output_name:
-            original_video_file = user_state[message.chat.id]["video_file"]
-            original_subtitle_file = user_state[message.chat.id]["subtitle_file"]
 
-            new_video_file = f"downloaded_{output_name}.mkv" 
-            new_subtitle_file = f"{output_name}_subtitle.srt"
-            for output_file in [new_video_file, new_subtitle_file, output_name + '_subtitle.srt' , output_name + '_subtitle_shifted.srt']:
-                if os.path.exists(output_file):
-                    os.remove(output_file)
-            print(f"Deleted existing file: {output_file}")
-            if os.path.exists(original_video_file):
-                os.rename(original_video_file, new_video_file)
+    # Process video and subtitle links
+    tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
 
-            if os.path.exists(original_subtitle_file):
-                os.rename(original_subtitle_file, new_subtitle_file)
-            print(original_video_file , new_video_file + " <==========>" + original_subtitle_file , new_subtitle_file)
-            await process_video_with_files(new_video_file, new_subtitle_file, output_name, client, message.chat.id)
+    for i in range(0, len(tasks), 3):
+        if i + 2 < len(tasks):
+            video_link = tasks[i].strip()
+            subtitle_link = tasks[i + 1].strip()
+            output_name = tasks[i + 2].strip()
 
-            del user_state[message.chat.id]
-        else:
-            await client.send_message(message.chat.id, "لطفاً نام خروجی را به درستی وارد کنید.")
-    else: 
-        tasks = [line.strip() for line in message.text.splitlines() if line.strip()]
+            if video_link and subtitle_link and output_name:
+                if subtitle_link.endswith('.zip'):
+                    zip_path = 'temp_subs.zip'
+                    await download_file(subtitle_link, zip_path)
+                    srt_file = extract_first_srt(zip_path)
 
-        for i in range(0, len(tasks), 3):
-            if i + 2 < len(tasks):
-                video_link = tasks[i].strip()
-                subtitle_link = tasks[i + 1].strip()
-                output_name = tasks[i + 2].strip()
+                    if srt_file is None:
+                        await client.send_message(message.chat.id, "No SRT file found in the ZIP.")
+                        continue
+                else:
+                    srt_file = subtitle_link
 
-                if video_link and subtitle_link and output_name:
-                    video_queue.put((video_link, subtitle_link, output_name, client, message.chat.id))
+                video_queue.put((video_link, srt_file, output_name, client, message.chat.id))
 
-        if not video_queue.empty():
-            await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
-
+    if not video_queue.empty():
+        await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
+        
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
         client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
