@@ -54,6 +54,10 @@ async def download_file(client, url, filename, chat_id, message_id):
     downloaded = 0
     start_time = time.time()
     
+    # Get the filename from the URL if not provided
+    if not filename:
+        filename = os.path.basename(url)  # Use the last part of the URL as filename
+    
     with open(filename, 'wb') as f:
         last_update_time = time.time()
         previous_message = ""
@@ -105,6 +109,7 @@ async def download_file(client, url, filename, chat_id, message_id):
             for file in extracted_files:
                 if file.endswith('.srt'):
                     extracted_srt_file = os.path.join(DOWNLOAD_DIRECTORY, file)
+                    print(extracted_srt_file)
                     break
         
         # Clean up the ZIP file after extraction
