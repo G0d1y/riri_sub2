@@ -2,9 +2,11 @@ import requests
 import time
 import os
 import asyncio
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-DOWNLOAD_DIRECTORY = "./"
+import zipfile
 
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+DOWNLOAD_DIRECTORY = "./"
 cancel_event = asyncio.Event()
 
 async def download_document(client, document, file_name, chat_id, message_id):
@@ -37,7 +39,7 @@ async def download_document(client, document, file_name, chat_id, message_id):
                 chat_id,
                 message_id,
                 message_content,
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]])
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]]),
             )    
     try:
         await client.download_media(document, file_path, progress=progress)
@@ -45,7 +47,7 @@ async def download_document(client, document, file_name, chat_id, message_id):
     except Exception as e:
         print(f"Error downloading file: {e}")
         return None
-    
+
 async def download_file(client, url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
@@ -85,10 +87,29 @@ async def download_file(client, url, filename, chat_id, message_id):
                         chat_id,
                         message_id,
                         message_content,
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]])
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]]),
                     )
                     previous_message = message_content
                 last_update_time = current_time
     
     print("Download completed.")
-    return filename
+
+    # Check if the downloaded file is a zip file and extract it
+    if filename.endswith('.zip'):
+        extracted_srt_file = None
+        with zipfile.ZipFile(filename, 'r') as zip_ref:
+            zip_ref.extractall(DOWNLOAD_DIRECTORY)
+            # Get the list of extracted files
+            extracted_files = zip_ref.namelist()
+            # Find the first SRT file
+            for file in extracted_files:
+                if file.endswith('.srt'):
+                    extracted_srt_file = os.path.join(DOWNLOAD_DIRECTORY, file)
+                    break
+        
+        # Clean up the ZIP file after extraction
+        os.remove(filename)  # Remove the ZIP file
+        if extracted_srt_file:
+            return extracted_srt_file  # Return the SRT file path
+
+    return filename  # Return the original filename if no SRT file is found
