@@ -48,23 +48,12 @@ async def download_document(client, document, file_name, chat_id, message_id):
         print(f"Error downloading file: {e}")
         return None
 
-def get_extension(file_path):
-    """Returns the file extension of the given file path."""
-    _, ext = os.path.splitext(file_path)
-    print(ext)
-    return ext
-
 async def download_file(client, url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
     start_time = time.time()
     
-    # Get the filename from the URL if not provided
-    if not filename:
-        filename = os.path.basename(url)  # Use the last part of the URL as filename
-    
-    print(filename)
     with open(filename, 'wb') as f:
         last_update_time = time.time()
         previous_message = ""
@@ -106,7 +95,7 @@ async def download_file(client, url, filename, chat_id, message_id):
     print("Download completed.")
 
     # Check if the downloaded file is a zip file and extract it
-    if get_extension(filename) == '.zip':
+    if filename.endswith('.zip'):
         extracted_srt_file = None
         with zipfile.ZipFile(filename, 'r') as zip_ref:
             zip_ref.extractall(DOWNLOAD_DIRECTORY)
@@ -114,7 +103,7 @@ async def download_file(client, url, filename, chat_id, message_id):
             extracted_files = zip_ref.namelist()
             # Find the first SRT file
             for file in extracted_files:
-                if get_extension(file) == '.srt':
+                if file.endswith('.srt'):
                     extracted_srt_file = os.path.join(DOWNLOAD_DIRECTORY, file)
                     break
         

@@ -7,6 +7,7 @@ import asyncio
 from pyrogram import Client, filters
 from downloader import download_file , download_document , cancel_event
 from ffmpeg import process_videos , shift_subtitles , add_soft_subtitle , trim_video , get_aac_profile , low_qulity
+from urllib.parse import urlparse
 
 with open('config.json') as config_file:
     config = json.load(config_file)
@@ -153,6 +154,13 @@ async def handle_output_name(client, message):
         if not video_queue.empty():
             await client.send_message(message.chat.id, "لینک‌ها دریافت شد. در حال پردازش...")
 
+def get_extension_from_url(url):
+    parsed_url = urlparse(url)
+    path = parsed_url.path
+    _, ext = os.path.splitext(path)
+    print(ext)
+    return ext
+
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
         client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
@@ -170,7 +178,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
             print(f"Deleted existing file: {output_file}")
 
     asyncio.run(download_file(client, video_link, downloaded, chat_id , message_id))
-    asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle', chat_id , message_id))
+    ext = get_extension_from_url(subtitle_link)
+    asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle' + ext, chat_id , message_id))
     if cancel_event.is_set() == False:
         processing_start_time = time.time()
 
