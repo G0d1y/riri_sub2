@@ -168,7 +168,7 @@ def handle_video_link(client, message):
         def handle_user_response(client, user_response):
             if user_response.chat.id == message.chat.id:  # Ensure it matches the original message's chat
                 if user_response.text.strip() == "1":
-                    # Assume user confirmed it's a video
+                    # User confirmed it's a video
                     msg.edit("در حال دانلود ویدیو...")
                     download_video(link, original_video_path, message.chat.id, msg.id)
                     converted_video_480p = os.path.join("video_480p.mkv")
@@ -180,7 +180,7 @@ def handle_video_link(client, message):
                     os.remove(original_video_path)
                     os.remove(converted_video_480p)
                 elif user_response.text.strip() == "2":
-                    # Assume user confirmed it's a zip file
+                    # User confirmed it's a zip file
                     msg.edit("درحال دانلود فایل ZIP...")
                     zip_file_path = "downloaded_file.zip"
                     extract_folder = "extracted_files"
@@ -210,7 +210,6 @@ def handle_video_link(client, message):
                 app.remove_handler(handle_user_response)
 
 # Ensure you have proper definitions for download_video, download_file, convert_video, and unzip_file functions.
-
 
 @app.on_message(filters.text & filters.private & filters.user([123456789]))  # Replace with your admin user ID
 def handle_zip_file(client, message):
