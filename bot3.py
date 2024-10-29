@@ -167,6 +167,7 @@ def handle_video_link(client, message):
         @app.on_message(filters.text & filters.private)
         def handle_user_response(client, user_response):
             if user_response.chat.id == message.chat.id:  # Ensure it matches the original message's chat
+                print(user_response.text)
                 if user_response.text.strip() == "1":
                     # User confirmed it's a video
                     msg.edit("در حال دانلود ویدیو...")
