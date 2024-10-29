@@ -115,109 +115,42 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
 
     process.wait()
 
-# A dictionary to track user responses
-user_responses = {}
-
 @app.on_message(filters.text & filters.private)
-def handle_video_link(client, message):
-    link = message.text.strip()  # Clean up the input
-    original_video_path = os.path.join("original_540p_video.mkv")
-
-    # Check if the link has a valid format
-    if any(link.endswith(ext) for ext in ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv')):
-        msg = message.reply("درحال دانلود ویدیو...")
-        download_video(link, original_video_path, message.chat.id, msg.id)
-        converted_video_480p = os.path.join("video_480p.mkv")
-        convert_msg = message.reply("درحال پردازش ویدیو...")
-        convert_video(original_video_path, converted_video_480p, "854:480", message.chat.id, convert_msg.id)
-        client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
-
-        # Clean up
-        os.remove(original_video_path)
-        os.remove(converted_video_480p)
-
-    elif '.zip' in link:  # Check if '.zip' is present anywhere in the link
-        msg = message.reply("درحال دانلود فایل ZIP...")
-        zip_file_path = "downloaded_file.zip"
-        extract_folder = "extracted_files"
-
-        # Download the zip file
-        download_file(link, zip_file_path)
-
-        # Create a directory to extract the files
-        os.makedirs(extract_folder, exist_ok=True)
-
-        # Unzip the file
-        unzip_file(zip_file_path, extract_folder)
-
-        # Send the extracted files back to the user
-        for root, dirs, files in os.walk(extract_folder):
-            for file in files:
-                file_path = os.path.join(root, file)
-                client.send_document(chat_id=message.chat.id, document=file_path)
-
-        # Clean up
-        os.remove(zip_file_path)
-        for file in os.listdir(extract_folder):
-            os.remove(os.path.join(extract_folder, file))
-        os.rmdir(extract_folder)
-
+def handle_user_input(client, message):
+    user_input = message.text.strip()
+    
+    # Determine if it's a zip file or a video based on the input
+    if user_input.lower().endswith("zip"):
+        zip_link = user_input[:-3].strip()  # Remove 'zip'
+        handle_zip_file(client, message, zip_link)
     else:
-        # If no recognizable format is found, ask the user for input
-        msg = message.reply("لینک شما هیچ فرمت قابل شناسایی ندارد. آیا این لینک مربوط به ویدیو است (نوع 1) یا فایل ZIP (نوع 2)؟")
-        user_responses[message.chat.id] = link  # Store the link and user ID
+        video_link = user_input.strip()  # Treat as a video link
+        handle_video_file(client, message, video_link)
 
-@app.on_message(filters.text & filters.private)
-def handle_user_response(client, user_response):
-    if user_response.chat.id in user_responses:
-        link = user_responses[user_response.chat.id]  # Retrieve the stored link
-        if user_response.text.strip() == "1":
-            # User confirmed it's a video
-            msg = user_response.reply("در حال دانلود ویدیو...")
-            original_video_path = os.path.join("original_540p_video.mkv")
-            download_video(link, original_video_path, user_response.chat.id, msg.id)
-            converted_video_480p = os.path.join("video_480p.mkv")
-            convert_msg = user_response.reply("درحال پردازش ویدیو...")
-            convert_video(original_video_path, converted_video_480p, "854:480", user_response.chat.id, convert_msg.id)
-            client.send_document(chat_id=user_response.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
+def handle_video_file(client, message, video_link):
+    original_video_path = os.path.join("original_540p_video.mkv")
+    
+    msg = message.reply("درحال دانلود...")
 
-            # Clean up
-            os.remove(original_video_path)
-            os.remove(converted_video_480p)
+    # Remove existing video files
+    for output_file in ["video_480p.mkv", "video_360p.mkv", "original_540p_video.mkv"]:
+        if os.path.exists(output_file):
+            os.remove(output_file)
+            print(f"Deleted existing file: {output_file}")
 
-        elif user_response.text.strip() == "2":
-            # User confirmed it's a zip file
-            msg = user_response.reply("درحال دانلود فایل ZIP...")
-            zip_file_path = "downloaded_file.zip"
-            extract_folder = "extracted_files"
+    download_video(video_link, original_video_path, message.chat.id, msg.id)
 
-            # Download the zip file
-            download_file(link, zip_file_path)
+    converted_video_480p = os.path.join("video_480p.mkv")
+    convert_msg = message.reply("درحال پردازش ویدیو...")
+    convert_video(original_video_path, converted_video_480p, "854:480", message.chat.id, convert_msg.id)
 
-            # Create a directory to extract the files
-            os.makedirs(extract_folder, exist_ok=True)
+    client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
 
-            # Unzip the file
-            unzip_file(zip_file_path, extract_folder)
+    # Clean up
+    os.remove(original_video_path)
+    os.remove(converted_video_480p)
 
-            # Send the extracted files back to the user
-            for root, dirs, files in os.walk(extract_folder):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    client.send_document(chat_id=user_response.chat.id, document=file_path)
-
-            # Clean up
-            os.remove(zip_file_path)
-            for file in os.listdir(extract_folder):
-                os.remove(os.path.join(extract_folder, file))
-            os.rmdir(extract_folder)
-
-        # Remove the link from the dictionary
-        del user_responses[user_response.chat.id]
-
-@app.on_message(filters.text & filters.private & filters.user([123456789]))  # Replace with your admin user ID
-def handle_zip_file(client, message):
-    zip_link = message.text
+def handle_zip_file(client, message, zip_link):
     zip_file_path = "downloaded_file.zip"
     extract_folder = "extracted_files"
 
