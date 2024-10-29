@@ -162,11 +162,11 @@ def handle_video_link(client, message):
     else:
         # If no recognizable format is found, ask the user for input
         msg = message.reply("لینک شما هیچ فرمت قابل شناسایی ندارد. آیا این لینک مربوط به ویدیو است (نوع 1) یا فایل ZIP (نوع 2)؟")
-        
-        # Set a filter for the user response
+
+        # Create a new handler for the user's response
         @app.on_message(filters.text & filters.private)
         def handle_user_response(client, user_response):
-            if user_response.chat.id == message.chat.id:
+            if user_response.chat.id == message.chat.id:  # Ensure it matches the original message's chat
                 if user_response.text.strip() == "1":
                     # Assume user confirmed it's a video
                     msg.edit("در حال دانلود ویدیو...")
@@ -208,6 +208,9 @@ def handle_video_link(client, message):
 
                 # Remove the handler after processing
                 app.remove_handler(handle_user_response)
+
+# Ensure you have proper definitions for download_video, download_file, convert_video, and unzip_file functions.
+
 
 @app.on_message(filters.text & filters.private & filters.user([123456789]))  # Replace with your admin user ID
 def handle_zip_file(client, message):
