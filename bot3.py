@@ -117,13 +117,13 @@ def convert_video(input_path, output_path, resolution, chat_id, message_id):
 
 @app.on_message(filters.text & filters.private)
 def handle_video_link(client, message):
-    link = message.text
+    link = message.text.strip()  # Remove any leading/trailing whitespace
     original_video_path = os.path.join("original_540p_video.mkv")
 
     msg = message.reply("درحال بررسی لینک...")
 
     # Check if the link is a video or a zip file
-    if link.endswith(('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv')):
+    if any(link.endswith(ext) for ext in ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv')):
         msg.edit("درحال دانلود ویدیو...")
         # Remove existing video files
         for output_file in ["video_480p.mkv", "video_360p.mkv", "original_540p_video.mkv"]:
@@ -143,7 +143,7 @@ def handle_video_link(client, message):
         os.remove(original_video_path)
         os.remove(converted_video_480p)
 
-    elif link.endswith('.zip'):
+    elif '.zip' in link:  # Check if '.zip' is present anywhere in the link
         msg.edit("درحال دانلود فایل ZIP...")
         zip_file_path = "downloaded_file.zip"
         extract_folder = "extracted_files"
