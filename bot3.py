@@ -4,7 +4,9 @@ import time
 import requests
 import subprocess
 import re
+import zipfile
 from pyrogram import Client, filters
+
 with open('config2.json') as config_file:
     config = json.load(config_file)
 
@@ -13,7 +15,6 @@ api_hash = config['api_hash']
 bot_token = config['bot_token']
 
 app = Client("video_download_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
-
 
 def download_video(url, filename, chat_id, message_id):
     response = requests.get(url, stream=True)
@@ -49,6 +50,20 @@ def download_video(url, filename, chat_id, message_id):
                     app.edit_message_text(chat_id=chat_id, message_id=message_id, text=message_content)
                     previous_message = message_content
                 last_update_time = current_time
+
+def download_file(url, filename):
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get('content-length', 0))
+    downloaded = 0
+
+    with open(filename, 'wb') as f:
+        for data in response.iter_content(chunk_size=1024):
+            f.write(data)
+            downloaded += len(data)
+
+def unzip_file(zip_path, extract_to):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_to)
 
 def parse_ffmpeg_output(output_line):
     progress_pattern = re.compile(
@@ -106,8 +121,9 @@ def handle_video_link(client, message):
     original_video_path = os.path.join("original_540p_video.mkv")
     
     msg = message.reply("درحال دانلود...")
-    
-    for output_file in ["video_480p.mkv", "video_360p.mkv" , "original_540p_video.mkv"]:
+
+    # Remove existing video files
+    for output_file in ["video_480p.mkv", "video_360p.mkv", "original_540p_video.mkv"]:
         if os.path.exists(output_file):
             os.remove(output_file)
             print(f"Deleted existing file: {output_file}")
@@ -115,19 +131,41 @@ def handle_video_link(client, message):
     download_video(video_link, original_video_path, message.chat.id, msg.id)
 
     converted_video_480p = os.path.join("video_480p.mkv")
-    #converted_video_360p = os.path.join("video_360p.mkv")
-
     convert_msg = message.reply("درحال پردازش ویدیو...")
-
     convert_video(original_video_path, converted_video_480p, "854:480", message.chat.id, convert_msg.id)
-    #convert_video(original_video_path, converted_video_360p, "640:360", message.chat.id, convert_msg.id)
 
     client.send_document(chat_id=message.chat.id, document=converted_video_480p, caption="Here is your 480p video!")
-    #client.send_document(chat_id=message.chat.id, document=converted_video_360p, caption="Here is your 360p video!")
 
     # Clean up
     os.remove(original_video_path)
     os.remove(converted_video_480p)
-    #os.remove(converted_video_360p)
+
+@app.on_message(filters.text & filters.private & filters.user([123456789]))  # Replace with your admin user ID
+def handle_zip_file(client, message):
+    zip_link = message.text
+    zip_file_path = "downloaded_file.zip"
+    extract_folder = "extracted_files"
+
+    # Download the zip file
+    client.send_message(message.chat.id, "درحال دانلود فایل ZIP...")
+    download_file(zip_link, zip_file_path)
+
+    # Create a directory to extract the files
+    os.makedirs(extract_folder, exist_ok=True)
+
+    # Unzip the file
+    unzip_file(zip_file_path, extract_folder)
+
+    # Send the extracted files back to the user
+    for root, dirs, files in os.walk(extract_folder):
+        for file in files:
+            file_path = os.path.join(root, file)
+            client.send_document(chat_id=message.chat.id, document=file_path)
+
+    # Clean up
+    os.remove(zip_file_path)
+    for file in os.listdir(extract_folder):
+        os.remove(os.path.join(extract_folder, file))
+    os.rmdir(extract_folder)
 
 app.run()
