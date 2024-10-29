@@ -170,7 +170,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
             print(f"Deleted existing file: {output_file}")
 
     asyncio.run(download_file(client, video_link, downloaded, chat_id , message_id))
-    asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle.srt', chat_id , message_id))
+    asyncio.run(download_file(client, subtitle_link, output_name + '_subtitle', chat_id , message_id))
     if cancel_event.is_set() == False:
         processing_start_time = time.time()
 
