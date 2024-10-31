@@ -56,6 +56,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
             print(f"Deleted existing file: {output_file}")
     shifted_subtitle_file = shift_subtitles(subtitle_file, delay_seconds=15, delay_milliseconds=40)
     aac_profile = get_aac_profile(video_file)
+    print(aac_profile)
     if aac_profile == "x264_HE.mkv":
         await client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x264 تشخیص داده شد!"+ "\n" + "چنل صدا ‌Stereo تشخیص داده شد!")
     if aac_profile == "x264_LC.mkv":
