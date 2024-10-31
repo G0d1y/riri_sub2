@@ -32,7 +32,10 @@ ongoing_downloads = {}
 
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
-    exclude_files = {'x264_HE.mkv' , 'x264_LC.mkv' , 'x265_HE.mkv' , 'x265_LC.mkv'}
+    exclude_files = {
+    'x264_HE.mkv' , 'x264_LC.mkv' , 'x265_HE.mkv' , 'x265_LC.mkv' ,
+    'x264_HE_5.1.mkv' , 'x264_LC_5.1.mkv' , 'x265_HE_5.1.mkv' , 'x265_LC_5.1.mkv'
+    }
 
     directory = os.getcwd()
 

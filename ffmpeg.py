@@ -136,14 +136,32 @@ def get_aac_profile(video_file):
         codec = get_video_codec(video_file)
         if 'lc' in profile:
             if codec == "x264":
-                return "x264_LC.mkv"
+                channel_layout = get_audio_channel_layout(video_file)
+                if channel_layout in ["stereo", "mono"]:
+                    return "x264_LC.mkv"
+                else:
+                    return "x264_LC_5.1.mkv"
             elif codec == "x265":
-                return "x265_LC.mkv"
+                channel_layout = get_audio_channel_layout(video_file)
+                if channel_layout in ["stereo", "mono"]:
+                    return "x265_LC.mkv"
+                else:
+                    return "x265_LC_5.1.mkv"
         elif 'he' in profile:
             if codec == "x264":
-                return "x264_HE.mkv"
+                channel_layout = get_audio_channel_layout(video_file)
+                if channel_layout in ["stereo", "mono"]:
+                    return "x264_HE.mkv"
+                else:
+                    return "x264_HE_5.1.mkv"   
+                                 
             elif codec == "x265":
-                return "x265_HE.mkv"
+                channel_layout = get_audio_channel_layout(video_file)
+                if channel_layout in ["stereo", "mono"]:
+                    return "x265_HE.mkv"
+                else:
+                    return "x265_HE_5.1.mkv"
+                
         else:
             return "x264_LC.mkv"
 
@@ -174,3 +192,26 @@ def get_video_codec(file_path):
     
     except Exception as e:
         return f"Error: {str(e)}"
+
+def get_audio_channel_layout(video_path):
+    command = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries", "stream=channel_layout",
+        "-of", "json",
+        video_path
+    ]
+    
+    try:
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        data = json.loads(result.stdout)
+        
+        if 'streams' in data and data['streams']:
+            channel_layout = data['streams'][0].get('channel_layout', 'Unknown')
+            return channel_layout
+        else:
+            return "No audio stream found"
+    
+    except subprocess.CalledProcessError as e:
+        return f"Error: {e.stderr}"
