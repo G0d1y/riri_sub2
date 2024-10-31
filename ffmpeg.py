@@ -153,7 +153,6 @@ def get_aac_profile(video_file):
                 if channel_layout in ["stereo", "mono"]:
                     return "x264_HE.mkv"
                 else:
-                    print("x264_HE_5.1.mkv")
                     return "x264_HE_5.1.mkv"   
                 
                                  
