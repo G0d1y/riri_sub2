@@ -2,10 +2,15 @@ import os
 import requests
 from pyrogram import Client, filters
 from g4f.client import Client as G4FClient
+import json
+with open('config2.json') as config_file:
+    config = json.load(config_file)
 
-# Initialize Pyrogram Client
-app = Client("my_bot", api_id=29049827, api_hash="16039b7254c83bed8df1038e4139b1b9", bot_token="7297397883:AAFo7xlynx-Vr1ngEM5jt_DTu25SmKOLuFw")
+api_id = int(config['api_id'])
+api_hash = config['api_hash']
+bot_token = config['bot_token']
 
+app = Client("Image_Generator", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 # Initialize g4f Client
 g4f_client = G4FClient()
 
