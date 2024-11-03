@@ -44,11 +44,8 @@ def handle_conversion_request(client, message):
                 "convert-my-file": {
                     "operation": "convert",
                     "input": "import-my-file",
-                    "output_format": "mp4",
+                    "output_format": "mkv",
                     "video_resolution": target_resolution,
-                    "video_codec": "H264",
-                    "audio_codec": "aac",
-                    "audio_channels": 2
                 },
                 "export-my-file": {
                     "operation": "export/url",
