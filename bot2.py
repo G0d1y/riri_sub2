@@ -20,7 +20,7 @@ RESOLUTION_MAP = {
     "480": "854x480"
 }
 
-@app.on_message(filters.text & filters.command)
+@app.on_message(filters.text)
 def handle_conversion_request(client, message):
     text = message.text.strip()
     match = re.match(r'(https?://\S+)\s+(360|480)', text)
