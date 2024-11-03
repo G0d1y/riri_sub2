@@ -1,50 +1,71 @@
-import os
-import requests
 from pyrogram import Client, filters
-from g4f.client import Client as G4FClient
+import cloudconvert
+import re
+import time
 import json
+
 with open('config2.json') as config_file:
     config = json.load(config_file)
 
 api_id = int(config['api_id'])
 api_hash = config['api_hash']
 bot_token = config['bot_token']
+cl_api = config['cl_api']
 
-app = Client("Image_Generator", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
-# Initialize g4f Client
-g4f_client = G4FClient()
+cloudconvert.configure(api_key=cl_api)
+app = Client("video_converter_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-@app.on_message(filters.command("start"))
-async def start(client, message):
-    await message.reply("Hello! Send me a prompt, and I'll generate an image for you.")
+RESOLUTION_MAP = {
+    "360": "640x360",
+    "480": "854x480"
+}
 
-@app.on_message(filters.text & ~filters.command("start"))
-async def generate_image(client, message):
-    user_prompt = message.text
+@app.on_message(filters.text & ~filters.command)
+def handle_conversion_request(client, message):
+    text = message.text.strip()
+    match = re.match(r'(https?://\S+)\s+(360|480)', text)
     
-    # Use the asynchronous image generation
-    response = await g4f_client.images.async_generate(
-        model="playground-v2.5",
-        prompt=user_prompt
-    )
+    if match:
+        video_url, resolution = match.groups()
+        
+        if resolution not in RESOLUTION_MAP:
+            message.reply_text("رزولوشن‌های پشتیبانی‌شده: 360 و 480 می‌باشد.")
+            return
+        
+        target_resolution = RESOLUTION_MAP[resolution]
+        status_message = message.reply_text("در حال شروع تبدیل ویدیو...")
+        
+        job = cloudconvert.Job.create(payload={
+            "tasks": {
+                "import-my-file": {
+                    "operation": "import/url",
+                    "url": video_url
+                },
+                "convert-my-file": {
+                    "operation": "convert",
+                    "input": "import-my-file",
+                    "output_format": "mp4",
+                    "video_resolution": target_resolution,
+                    "video_codec": "H264",
+                    "audio_codec": "aac",
+                    "audio_channels": 2
+                },
+                "export-my-file": {
+                    "operation": "export/url",
+                    "input": "convert-my-file"
+                }
+            }
+        })
 
-    # Check if the response contains a URL
-    if response and response.data:
-        image_url = response.data[0].url
-        image_path = "generated_image.jpg"
+        job_id = job['id']
+        
+        while True:
+            job = cloudconvert.Job.wait(id=job_id)
+            if job['status'] == 'finished':
+                download_url = job['tasks']['export-my-file']['result']['files'][0]['url']
+                message.reply_text(f"ویدیو شما به {resolution} تبدیل شد. لینک دانلود: {download_url}")
+                break
+            time.sleep(5)
+            status_message.edit("تبدیل در حال انجام است...")
 
-        # Download the image
-        image_data = requests.get(image_url)
-        with open(image_path, "wb") as f:
-            f.write(image_data.content)
-
-        # Send the image to the user
-        await message.reply_photo(photo=image_path, caption="Here's your generated image!")
-
-        # Clean up the downloaded file
-        os.remove(image_path)
-    else:
-        await message.reply("Sorry, I couldn't generate an image. Please try again.")
-
-# Run the bot
 app.run()
