@@ -18,54 +18,22 @@ def create_ts_file(input_video, output_file):
     else:
         print(f"Error: {input_video} not found.")
 
-def convert_to_mpg(input_ts, output_mpg):
-    """Convert a .ts file to .mpg format, re-encoding audio to mp2 if necessary."""
-    cmd = ['ffmpeg', '-i', input_ts, '-c:v', 'copy', '-c:a', 'mp2', output_mpg]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-    if result.returncode != 0:
-        print(f"Failed to convert {input_ts} to {output_mpg}. FFmpeg error:\n{result.stderr.decode()}")
-        return False
-    return True
-
 def concat_videos(trailer_ts, downloaded_ts, final_output):
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
-            # Define temporary .mpg file paths
-            trailer_mpg = 'trailer.mpg'
-            downloaded_mpg = 'downloaded.mpg'
-
-            # Convert .ts files to .mpg
-            if not convert_to_mpg(trailer_ts, trailer_mpg) or not convert_to_mpg(downloaded_ts, downloaded_mpg):
-                print("Conversion to .mpg failed, aborting concatenation.")
-                return
-            
-            # Write paths to concat list
             with open('concat_list.txt', 'w') as f:
-                f.write(f"file '{trailer_mpg}'\n")
-                f.write(f"file '{downloaded_mpg}'\n")
+                f.write(f"file '{trailer_ts}'\n")
+                f.write(f"file '{downloaded_ts}'\n")
 
-            # FFmpeg command with -fflags +genpts to handle timestamps
             cmd = [
-                'ffmpeg', '-f', 'concat', '-safe', '0', '-fflags', '+genpts', '-i', 'concat_list.txt',
+                'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
                 '-c', 'copy', final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-            # Check result and output appropriate message
             if result.returncode != 0:
-                print(f"Failed to concatenate videos. FFmpeg error:\n{result.stderr.decode()}")
-            else:
-                print("Videos concatenated successfully.")
-        
+                print(f"Failed to concatenate videos: {result.stderr.decode()}")
         except Exception as e:
             print(f"Error concatenating videos: {e}")
-        
-        finally:
-            # Clean up temporary files
-            for temp_file in [trailer_mpg, downloaded_mpg, 'concat_list.txt']:
-                if os.path.exists(temp_file):
-                    os.remove(temp_file)
     else:
         print("One or both of the .ts files were not found.")
 
