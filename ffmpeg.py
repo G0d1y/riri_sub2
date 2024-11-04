@@ -19,8 +19,8 @@ def create_ts_file(input_video, output_file):
         print(f"Error: {input_video} not found.")
 
 def convert_to_mpg(input_ts, output_mpg):
-    """Convert a .ts file to .mpg format without re-encoding."""
-    cmd = ['ffmpeg', '-i', input_ts, '-c', 'copy', output_mpg]
+    """Convert a .ts file to .mpg format, re-encoding audio to mp2 if necessary."""
+    cmd = ['ffmpeg', '-i', input_ts, '-c:v', 'copy', '-c:a', 'mp2', output_mpg]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     if result.returncode != 0:
@@ -68,7 +68,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
                     os.remove(temp_file)
     else:
         print("One or both of the .ts files were not found.")
-               
+
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
