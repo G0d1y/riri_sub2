@@ -21,19 +21,31 @@ def create_ts_file(input_video, output_file):
 def concat_videos(trailer_ts, downloaded_ts, final_output):
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
+            # Write paths to concat list
             with open('concat_list.txt', 'w') as f:
                 f.write(f"file '{trailer_ts}'\n")
                 f.write(f"file '{downloaded_ts}'\n")
 
+            # FFmpeg command with -fflags +genpts to handle timestamps
             cmd = [
-                'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c', 'copy', '-vsync', '2', final_output
+                'ffmpeg', '-f', 'concat', '-safe', '0', '-fflags', '+genpts', '-i', 'concat_list.txt',
+                '-c', 'copy', final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            # Check result and output appropriate message
             if result.returncode != 0:
-                print(f"Failed to concatenate videos: {result.stderr.decode()}")
+                print(f"Failed to concatenate videos. FFmpeg error:\n{result.stderr.decode()}")
+            else:
+                print("Videos concatenated successfully.")
+        
         except Exception as e:
             print(f"Error concatenating videos: {e}")
+        
+        finally:
+            # Clean up concat list file
+            if os.path.exists('concat_list.txt'):
+                os.remove('concat_list.txt')
     else:
         print("One or both of the .ts files were not found.")
 
