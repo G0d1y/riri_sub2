@@ -18,13 +18,32 @@ def create_ts_file(input_video, output_file):
     else:
         print(f"Error: {input_video} not found.")
 
+def convert_to_mpg(input_ts, output_mpg):
+    """Convert a .ts file to .mpg format without re-encoding."""
+    cmd = ['ffmpeg', '-i', input_ts, '-c', 'copy', output_mpg]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if result.returncode != 0:
+        print(f"Failed to convert {input_ts} to {output_mpg}. FFmpeg error:\n{result.stderr.decode()}")
+        return False
+    return True
+
 def concat_videos(trailer_ts, downloaded_ts, final_output):
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
+            # Define temporary .mpg file paths
+            trailer_mpg = 'trailer.mpg'
+            downloaded_mpg = 'downloaded.mpg'
+
+            # Convert .ts files to .mpg
+            if not convert_to_mpg(trailer_ts, trailer_mpg) or not convert_to_mpg(downloaded_ts, downloaded_mpg):
+                print("Conversion to .mpg failed, aborting concatenation.")
+                return
+            
             # Write paths to concat list
             with open('concat_list.txt', 'w') as f:
-                f.write(f"file '{trailer_ts}'\n")
-                f.write(f"file '{downloaded_ts}'\n")
+                f.write(f"file '{trailer_mpg}'\n")
+                f.write(f"file '{downloaded_mpg}'\n")
 
             # FFmpeg command with -fflags +genpts to handle timestamps
             cmd = [
@@ -43,12 +62,13 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             print(f"Error concatenating videos: {e}")
         
         finally:
-            # Clean up concat list file
-            if os.path.exists('concat_list.txt'):
-                os.remove('concat_list.txt')
+            # Clean up temporary files
+            for temp_file in [trailer_mpg, downloaded_mpg, 'concat_list.txt']:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
     else:
         print("One or both of the .ts files were not found.")
-
+        
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
