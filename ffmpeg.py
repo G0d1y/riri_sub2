@@ -27,7 +27,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c', 'copy', '-fflags', '+genpts', final_output
+                '-c', 'copy', '-vsync', '2', final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
