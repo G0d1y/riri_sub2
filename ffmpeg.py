@@ -68,7 +68,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
                     os.remove(temp_file)
     else:
         print("One or both of the .ts files were not found.")
-        
+               
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
