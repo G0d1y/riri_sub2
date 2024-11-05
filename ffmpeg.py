@@ -21,24 +21,23 @@ def get_video_fps(video_path):
     return None
 
 def create_ts_file(input_video, output_file, fps=None):
-    """Create a .ts file from the input video, optionally adjusting fps."""
     if os.path.exists(input_video):
         try:
-            # If fps is specified, set it in the command
-            if fps:
-                cmd = [
-                    'ffmpeg', '-i', input_video, '-c', 'copy',
-                    '-filter:v', f'fps={fps}', '-f', 'mpegts', output_file
-                ]
-            else:
-                cmd = [
-                    'ffmpeg', '-i', input_video, '-c', 'copy',
-                    '-f', 'mpegts', output_file
-                ]
-            
+            # Build the command with a video codec if fps is specified
+            cmd = [
+                'ffmpeg', '-i', input_video, 
+                '-vf', f'fps={fps}' if fps else 'null',  # Set frame rate filter if fps is provided
+                '-c:v', 'libx264',  # Change codec to libx264
+                '-c:a', 'copy',      # Copy audio stream without re-encoding
+                '-f', 'mpegts', output_file
+            ]
+
+            print(f"Running command: {' '.join(cmd)}")  # Debugging line
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 print(f"Failed to create {output_file}: {result.stderr.decode()}")
+            else:
+                print(f"Successfully created {output_file}")
         except Exception as e:
             print(f"Error running FFmpeg for {output_file}: {e}")
     else:
