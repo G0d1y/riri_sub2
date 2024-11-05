@@ -3,13 +3,39 @@ import subprocess
 import json
 from pysrt import SubRipTime , SubRipItem
 import pysrt
-def create_ts_file(input_video, output_file):
+def get_video_fps(video_path):
+    """Retrieve the frame rate of the video using FFmpeg."""
+    cmd = [
+        'ffmpeg', '-i', video_path
+    ]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # Decode the error message to extract fps
+    stderr_output = result.stderr.decode()
+    for line in stderr_output.split('\n'):
+        if 'fps' in line:
+            # Extract fps value from the line
+            fps_line = line.split('fps')[0]
+            # Assuming the format is something like "30.00 fps" or "25 fps"
+            fps_value = fps_line.split()[-1]
+            return float(fps_value)
+    return None
+
+def create_ts_file(input_video, output_file, fps=None):
+    """Create a .ts file from the input video, optionally adjusting fps."""
     if os.path.exists(input_video):
         try:
-            cmd = [
-                'ffmpeg', '-i', input_video, '-c', 'copy',
-                '-f', 'mpegts', output_file
-            ]
+            # If fps is specified, set it in the command
+            if fps:
+                cmd = [
+                    'ffmpeg', '-i', input_video, '-c', 'copy',
+                    '-filter:v', f'fps={fps}', '-f', 'mpegts', output_file
+                ]
+            else:
+                cmd = [
+                    'ffmpeg', '-i', input_video, '-c', 'copy',
+                    '-f', 'mpegts', output_file
+                ]
+            
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 print(f"Failed to create {output_file}: {result.stderr.decode()}")
@@ -18,69 +44,49 @@ def create_ts_file(input_video, output_file):
     else:
         print(f"Error: {input_video} not found.")
 
-def remux_video(input_file, output_file):
-    """Remux the video without re-encoding."""
-    cmd = ['ffmpeg', '-i', input_file, '-c', 'copy', output_file]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        print(f"Failed to remux video {input_file}: {result.stderr.decode()}")
-
 def concat_videos(trailer_ts, downloaded_ts, final_output):
-    """Concatenate two .ts videos after remuxing them."""
-    
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
-            # Create temporary remuxed files
-            remuxed_trailer = 'remuxed_trailer.ts'
-            remuxed_downloaded = 'remuxed_downloaded.ts'
-            
-            remux_video(trailer_ts, remuxed_trailer)
-            remux_video(downloaded_ts, remuxed_downloaded)
-            
-            # Write the concat list
             with open('concat_list.txt', 'w') as f:
-                f.write(f"file '{remuxed_trailer}'\n")
-                f.write(f"file '{remuxed_downloaded}'\n")
+                f.write(f"file '{trailer_ts}'\n")
+                f.write(f"file '{downloaded_ts}'\n")
 
-            # Concatenate the remuxed videos
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
                 '-c', 'copy', final_output
             ]
+            
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 print(f"Failed to concatenate videos: {result.stderr.decode()}")
-            else:
-                print("Videos concatenated successfully.")
-                
         except Exception as e:
             print(f"Error concatenating videos: {e}")
-        finally:
-            # Clean up temporary files
-            if os.path.exists(remuxed_trailer):
-                os.remove(remuxed_trailer)
-            if os.path.exists(remuxed_downloaded):
-                os.remove(remuxed_downloaded)
-            if os.path.exists('concat_list.txt'):
-                os.remove('concat_list.txt')
     else:
         print("One or both of the .ts files were not found.")
-        
+
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
 
-    create_ts_file(trailer_video, trailer_ts)
-    create_ts_file(downloaded_video, downloaded_ts)
-    concat_videos(trailer_ts, downloaded_ts, final_output)
+    # Get the frame rate of the downloaded video
+    downloaded_fps = get_video_fps(downloaded_video)
+    if downloaded_fps is not None:
+        print(f"Downloaded video FPS: {downloaded_fps}")
 
-    try:
-        os.remove(trailer_ts)
-        os.remove(downloaded_ts)
-        os.remove('concat_list.txt')
-        print("Cleanup: Deleted temporary files.")
-    except Exception as e:
-        print(f"Error during cleanup: {e}")
+        # Create .ts files, adjusting trailer fps to match downloaded fps
+        create_ts_file(trailer_video, trailer_ts, fps=downloaded_fps)
+        create_ts_file(downloaded_video, downloaded_ts)
+        concat_videos(trailer_ts, downloaded_ts, final_output)
+
+        try:
+            os.remove(trailer_ts)
+            os.remove(downloaded_ts)
+            os.remove('concat_list.txt')
+            print("Cleanup: Deleted temporary files.")
+        except Exception as e:
+            print(f"Error during cleanup: {e}")
+    else:
+        print("Could not retrieve FPS from the downloaded video.")
 
 def get_video_fps(video_path):
     try:
