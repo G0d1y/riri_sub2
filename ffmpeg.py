@@ -18,31 +18,14 @@ def create_ts_file(input_video, output_file):
     else:
         print(f"Error: {input_video} not found.")
 
-def remux_video(input_file, output_file):
-    """Remux the video without re-encoding."""
-    cmd = ['ffmpeg', '-i', input_file, '-c', 'copy', output_file]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        print(f"Failed to remux video {input_file}: {result.stderr.decode()}")
-
 def concat_videos(trailer_ts, downloaded_ts, final_output):
-    """Concatenate two .ts videos after remuxing them."""
     
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
-            # Create temporary remuxed files
-            remuxed_trailer = 'remuxed_trailer.ts'
-            remuxed_downloaded = 'remuxed_downloaded.ts'
-            
-            remux_video(trailer_ts, remuxed_trailer)
-            remux_video(downloaded_ts, remuxed_downloaded)
-            
-            # Write the concat list
             with open('concat_list.txt', 'w') as f:
-                f.write(f"file '{remuxed_trailer}'\n")
-                f.write(f"file '{remuxed_downloaded}'\n")
+                f.write(f"file '{trailer_ts}'\n")
+                f.write(f"file '{downloaded_ts}'\n")
 
-            # Concatenate the remuxed videos
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
                 '-c', 'copy', final_output
@@ -50,22 +33,11 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 print(f"Failed to concatenate videos: {result.stderr.decode()}")
-            else:
-                print("Videos concatenated successfully.")
-                
         except Exception as e:
             print(f"Error concatenating videos: {e}")
-        finally:
-            # Clean up temporary files
-            if os.path.exists(remuxed_trailer):
-                os.remove(remuxed_trailer)
-            if os.path.exists(remuxed_downloaded):
-                os.remove(remuxed_downloaded)
-            if os.path.exists('concat_list.txt'):
-                os.remove('concat_list.txt')
     else:
         print("One or both of the .ts files were not found.")
-        
+
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
