@@ -76,17 +76,24 @@ def process_videos(downloaded_video, trailer_video, final_output):
         # Create .ts files, adjusting trailer fps to match downloaded fps
         create_ts_file(trailer_video, trailer_ts, fps=downloaded_fps)
         create_ts_file(downloaded_video, downloaded_ts)
-        concat_videos(trailer_ts, downloaded_ts, final_output)
 
-        try:
-            os.remove(trailer_ts)
-            os.remove(downloaded_ts)
-            os.remove('concat_list.txt')
-            print("Cleanup: Deleted temporary files.")
-        except Exception as e:
-            print(f"Error during cleanup: {e}")
+        # Check if the .ts files were created successfully
+        if os.path.exists(trailer_ts) and os.path.exists(downloaded_ts):
+            concat_videos(trailer_ts, downloaded_ts, final_output)
+        else:
+            print("One or both .ts files were not created. Trailer TS:", os.path.exists(trailer_ts), "Downloaded TS:", os.path.exists(downloaded_ts))
+
+        # Attempt cleanup only if files exist
+        for temp_file in [trailer_ts, downloaded_ts, 'concat_list.txt']:
+            if os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                    print(f"Deleted temporary file: {temp_file}")
+                except Exception as e:
+                    print(f"Error during cleanup of {temp_file}: {e}")
     else:
         print("Could not retrieve FPS from the downloaded video.")
+
 
 def get_video_fps(video_path):
     try:
