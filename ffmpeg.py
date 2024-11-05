@@ -18,13 +18,25 @@ def create_ts_file(input_video, output_file):
     else:
         print(f"Error: {input_video} not found.")
 
+def remux_video(input_file, output_file):
+    cmd = ['ffmpeg', '-i', input_file, '-c', 'copy', output_file]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        print(f"Failed to remux video {input_file}: {result.stderr.decode()}")
+
 def concat_videos(trailer_ts, downloaded_ts, final_output):
     
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
+            remuxed_trailer = 'remuxed_trailer.ts'
+            remuxed_downloaded = 'remuxed_downloaded.ts'
+            
+            remux_video(trailer_ts, remuxed_trailer)
+            remux_video(downloaded_ts, remuxed_downloaded)
+            
             with open('concat_list.txt', 'w') as f:
-                f.write(f"file '{trailer_ts}'\n")
-                f.write(f"file '{downloaded_ts}'\n")
+                f.write(f"file '{remuxed_trailer}'\n")
+                f.write(f"file '{remuxed_downloaded}'\n")
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
@@ -33,8 +45,18 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 print(f"Failed to concatenate videos: {result.stderr.decode()}")
+            else:
+                print("Videos concatenated successfully.")
+                
         except Exception as e:
             print(f"Error concatenating videos: {e}")
+        finally:
+            if os.path.exists(remuxed_trailer):
+                os.remove(remuxed_trailer)
+            if os.path.exists(remuxed_downloaded):
+                os.remove(remuxed_downloaded)
+            if os.path.exists('concat_list.txt'):
+                os.remove('concat_list.txt')
     else:
         print("One or both of the .ts files were not found.")
 
