@@ -51,16 +51,23 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
-    path2 = 'trailer.mkv'
     fps = get_video_fps(downloaded_video)
-    change_fps(trailer_video , path2 ,  fps)
-    create_ts_file(path2, trailer_ts)
-    create_ts_file(downloaded_video, downloaded_ts)
-    concat_videos(trailer_ts, downloaded_ts, final_output)
+    fps2 = get_video_fps(trailer_video)
+    if fps == fps2:
+        create_ts_file(trailer_video, trailer_ts)
+        create_ts_file(downloaded_video, downloaded_ts)
+        concat_videos(trailer_ts, downloaded_ts, final_output)
+    else:
+        path2 = 'trailer.mkv'
+        print("Wrong FPS :" + f"{fps} =============>>>>>>>>>>>>> {fps2}")
+        change_fps(trailer_video , path2 ,  fps)
+        create_ts_file(path2, trailer_ts)
+        create_ts_file(downloaded_video, downloaded_ts)
+        concat_videos(trailer_ts, downloaded_ts, final_output)
+        os.remove(path2)
 
     try:
         os.remove(trailer_ts)
-        os.remove(path2)
         os.remove(downloaded_ts)
         os.remove('concat_list.txt')
         print("Cleanup: Deleted temporary files.")
