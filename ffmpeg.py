@@ -1,14 +1,19 @@
 import os
 import subprocess
 import json
-from pysrt import SubRipTime , SubRipItem
+from pysrt import SubRipTime, SubRipItem
 import pysrt
+
+# Print the number of available CPU cores
+cpu_cores = os.cpu_count()
+print(f"Available CPU cores: {cpu_cores}")
+
 def create_ts_file(input_video, output_file):
     if os.path.exists(input_video):
         try:
             cmd = [
                 'ffmpeg', '-i', input_video, '-c', 'copy',
-                '-f', 'mpegts', output_file
+                '-f', 'mpegts', '-threads', str(cpu_cores), output_file
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
@@ -24,9 +29,9 @@ def change_fps(input_file, output_file, new_fps):
         '-i', input_file,
         '-filter:v', f'fps=fps={new_fps}',
         '-c:a', 'copy',
+        '-threads', str(cpu_cores),
         output_file
     ]
-    
     subprocess.run(command)
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
@@ -38,7 +43,7 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 
             cmd = [
                 'ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat_list.txt',
-                '-c', 'copy', final_output
+                '-c', 'copy', '-threads', str(cpu_cores), final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
@@ -116,7 +121,7 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
     subprocess.run([
         'ffmpeg', '-i', video_file, '-i', subtitle_file, 
         '-c', 'copy', '-c:s', 'srt', '-metadata:s:s:0', 'title=@RiRiMovies', 
-        '-disposition:s:0', 'default', output_file
+        '-disposition:s:0', 'default' , '-threads', str(cpu_cores), output_file
     ])
 
 def low_qulity(input_path, output_path):
@@ -132,7 +137,7 @@ def low_qulity(input_path, output_path):
 def trim_video(input_file, output_file, duration=90):
     subprocess.run([
         'ffmpeg', '-err_detect', 'ignore_err', '-i', input_file, 
-        '-t', str(duration), '-c', 'copy', output_file
+        '-t', str(duration), '-c', 'copy' , '-threads', str(cpu_cores), output_file
     ])
     
 def get_aac_profile(video_file):
