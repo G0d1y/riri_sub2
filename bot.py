@@ -291,8 +291,8 @@ async def handle_cover(client, message):
         os.rename(downloaded_file_path, cover_image_path)
         
         await message.reply("عکس کاور دریافت شد...")
-        await client.send_photo("-1002310252740" , message.file_id)
-        await client.send_photo("-1002332192205" , message.file_id)
+        await client.send_photo("-1002310252740" , 'cover.jpg')
+        await client.send_photo("-1002332192205" , 'cover.jpg')
 
     except Exception as e:
         await message.reply(f"Error handling cover image: {str(e)}")
