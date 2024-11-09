@@ -227,17 +227,17 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         trimmed_output_path = 'trimmed.mkv'
         trim_video(final_output_path, trimmed_output_path, duration=90)
         trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
-        trimmed_url = f"https://t.me/-1002310252740/{trimmed.id}"
+        trimmed_url = f"https://t.me/c/2310252740/{trimmed.id}"
         client.send_message(chat_id, "trimmed: \n" + trimmed_url)
 
         trimmed_low_output_path = 'trimmed_low_quality.mkv'
         low_qulity(trimmed_output_path, trimmed_low_output_path)
         trimmed_low = client.send_document("-1002310252740", trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
-        trimmed_low_url = f"https://t.me/-1002310252740/{trimmed_low.id}"
+        trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
         client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
 
         final = client.send_document("-1002332192205", final_output_path, thumb="cover.jpg")
-        final_url = f"https://t.me/-1002332192205/{final.id}"
+        final_url = f"https://t.me/c/2332192205/{final.id}"
         client.send_message(chat_id, "final: \n" + final_url)
         client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
