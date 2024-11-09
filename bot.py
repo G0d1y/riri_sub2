@@ -226,13 +226,13 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
         trimmed_output_path = 'trimmed.mkv'
         trim_video(final_output_path, trimmed_output_path, duration=90)
-        client.send_document(chat_id, trimmed_output_path, caption= output_name, thumb="cover.jpg")
-
+        trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
+        print(trimmed)
         trimmed_low_output_path = 'trimmed_low_quality.mkv'
         low_qulity(trimmed_output_path, trimmed_low_output_path)
-        client.send_document(chat_id, trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
+        trimmed_low = client.send_document("-1002310252740", trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
 
-        client.send_document(chat_id, final_output_path, thumb="cover.jpg")
+        final = client.send_document("-1002332192205", final_output_path, thumb="cover.jpg")
         client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
         os.remove(downloaded)
