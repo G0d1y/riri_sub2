@@ -64,6 +64,8 @@ def process_videos(downloaded_video, trailer_video, final_output):
         concat_videos(trailer_ts, downloaded_ts, final_output)
     else:
         path2 = 'trailer.mkv'
+        if os.path.exists(path2):
+            os.remove(path2)
         print("Wrong FPS :" + f"{fps} =============>>>>>>>>>>>>> {fps2}")
         change_fps(trailer_video , path2 ,  fps)
         create_ts_file(path2, trailer_ts)
