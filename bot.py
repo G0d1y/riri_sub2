@@ -46,6 +46,7 @@ def download_and_unzip(client, message):
 
     try:
         # Download the file
+        client.send_message(message.chat.id, "در حال دانلود فایل ZIP...")
         response = requests.get(url, stream=True)
         response.raise_for_status()  # Raise an error for bad status codes
 
@@ -53,6 +54,13 @@ def download_and_unzip(client, message):
         with open(zip_filename, "wb") as file:
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
+
+        # Confirm file download
+        if not os.path.exists(zip_filename):
+            client.send_message(message.chat.id, "خطا: فایل ZIP دانلود نشد.")
+            return
+        
+        client.send_message(message.chat.id, "فایل ZIP با موفقیت دانلود شد. در حال استخراج فایل‌ها...")
 
         # Create the extraction folder if it doesn't exist
         os.makedirs(extract_folder, exist_ok=True)
@@ -62,24 +70,29 @@ def download_and_unzip(client, message):
             zip_ref.extractall(extract_folder)
 
         # Send each extracted file to the user
+        files_sent = 0
         for root, _, files in os.walk(extract_folder):
             for file in files:
                 file_path = os.path.join(root, file)
                 client.send_document(message.chat.id, file_path)
+                files_sent += 1
+
+        if files_sent == 0:
+            client.send_message(message.chat.id, "هیچ فایلی برای ارسال یافت نشد.")
+        else:
+            client.send_message(message.chat.id, f"مجموعاً {files_sent} فایل ارسال شد.")
 
         # Cleanup: Remove the zip file and extracted files
         os.remove(zip_filename)
         shutil.rmtree(extract_folder)
 
-        client.send_message(message.chat.id, "فایل‌ها با موفقیت ارسال شدند.")
-    
     except requests.exceptions.RequestException as e:
         client.send_message(message.chat.id, f"خطا در دانلود فایل: {e}")
     except zipfile.BadZipFile:
         client.send_message(message.chat.id, "فایل ZIP معتبر نیست.")
     except Exception as e:
         client.send_message(message.chat.id, f"خطا: {e}")
-
+        
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
     exclude_files = {
