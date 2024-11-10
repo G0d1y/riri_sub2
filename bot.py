@@ -11,6 +11,8 @@ from urllib.parse import urlparse
 import requests
 import zipfile
 import shutil
+import subprocess
+import signal
 with open('config.json') as config_file:
     config = json.load(config_file)
 
@@ -31,6 +33,26 @@ admins = [5429433533 , 6459990242]
 user_state = {}
 
 ongoing_downloads = {}
+
+def find_and_kill_bot():
+    try:
+        pid = int(subprocess.check_output(["pgrep", "-f", "bot.py"]))
+        
+        os.kill(pid, signal.SIGTERM)
+        print(f"Stopped bot with PID {pid}")
+        
+        time.sleep(2)
+    except subprocess.CalledProcessError:
+        print("Bot is not running.")
+
+def start_bot():
+    subprocess.Popen(["nohup", "python3", "bot.py", "&"])
+    print("Bot restarted.")
+
+@app.on_message(filters.command("reset"))
+def reset(client, message):
+    find_and_kill_bot()
+    start_bot()
 
 @app.on_message(filters.command("ost"))
 def download_and_unzip(client, message):
