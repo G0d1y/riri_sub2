@@ -49,10 +49,11 @@ def start_bot():
     subprocess.Popen(["nohup", "python3", "bot.py", "&"])
     print("Bot restarted.")
 
-@app.on_message(filters.command("reset"))
-def reset(client, message):
+@app.on_message(filters.command("restart"))
+def restart(client, message):
     find_and_kill_bot()
     start_bot()
+    client.send_message(message.chat.id, "Bot restarted.")
 
 @app.on_message(filters.command("ost"))
 def download_and_unzip(client, message):
