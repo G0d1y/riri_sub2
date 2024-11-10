@@ -3,7 +3,7 @@ import subprocess
 import json
 from pysrt import SubRipTime, SubRipItem
 import pysrt
-
+import time
 # Print the number of available CPU cores
 cpu_cores = os.cpu_count()
 print(f"Available CPU cores: {cpu_cores}")
@@ -24,6 +24,7 @@ def create_ts_file(input_video, output_file):
         print(f"Error: {input_video} not found.")
 
 def change_fps(input_file, output_file, new_fps):
+    processing_start_time = time.time()
     command = [
         'ffmpeg',
         '-i', input_file,
@@ -33,6 +34,8 @@ def change_fps(input_file, output_file, new_fps):
         output_file
     ]
     subprocess.run(command)
+    processing_time = time.time() - processing_start_time
+    print("change_fps: " + processing_time)
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
@@ -109,6 +112,7 @@ def seconds_to_subrip_time(seconds):
 
 def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     print("~~~~~~~~ SHIFTING SOFTSUB ~~~~~~~~")
+    processing_start_time = time.time()
     subs = pysrt.open(subtitle_file)
     delay = SubRipTime(seconds=delay_seconds, milliseconds=delay_milliseconds)
     for sub in subs:
@@ -116,15 +120,20 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
         sub.end = sub.end + delay
     shifted_subtitle_file = subtitle_file.replace('.srt', '_shifted.srt')
     subs.save(shifted_subtitle_file, encoding='utf-8')
+    processing_time = time.time() - processing_start_time
+    print(processing_time)
     return shifted_subtitle_file
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
     print("~~~~~~~~ ADDING SOFTSUB ~~~~~~~~")
+    processing_start_time = time.time()
     subprocess.run([
         'ffmpeg', '-i', video_file, '-i', subtitle_file, 
         '-c', 'copy', '-c:s', 'srt', '-metadata:s:s:0', 'title=@RiRiMovies', 
         '-disposition:s:0', 'default' , '-threads', str(cpu_cores), output_file
     ])
+    processing_time = time.time() - processing_start_time
+    print(processing_time)
 
 def low_qulity(input_path, output_path):
     resolution = "256:144"

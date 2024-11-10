@@ -76,12 +76,9 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     process_videos(video_file, aac_profile, full_output)
     final_output_path = f'{output_name}.mkv'
     add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
-    trimmed_output_path = 'trimmed.mkv'
-    trim_video(final_output_path, trimmed_output_path, duration=90)
     
     processing_time = time.time() - processing_start_time
     await client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
-    await client.send_document(chat_id, trimmed_output_path, caption=f"{output_name}\n{trimmed_output_path}", thumb="cover.jpg")
     await client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     await client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
@@ -90,7 +87,6 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     os.remove(shifted_subtitle_file)
     os.remove(final_output_path)
     os.remove(full_output)
-    os.remove(trimmed_output_path)
 
 @app.on_message(filters.document)
 async def handle_document(client, message):
