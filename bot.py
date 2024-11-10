@@ -34,42 +34,34 @@ ongoing_downloads = {}
 
 @app.on_message(filters.command("ost"))
 def download_and_unzip(client, message):
-    # Check if the command has an argument (the link)
     if len(message.command) < 2:
         client.send_message(message.chat.id, "لطفاً لینک فایل را وارد کنید.")
         return
 
-    # Extract the URL from the message
     url = message.command[1]
-    zip_filename = "downloaded.zip"  # Temporary filename for the zip
-    extract_folder = "extracted_files"  # Folder to extract the zip contents
+    zip_filename = "downloaded.zip"
+    extract_folder = "extracted_files"
 
     try:
-        # Download the file
         client.send_message(message.chat.id, "در حال دانلود فایل ZIP...")
         response = requests.get(url, stream=True)
-        response.raise_for_status()  # Raise an error for bad status codes
+        response.raise_for_status()
 
-        # Save the ZIP file to the current directory
         with open(zip_filename, "wb") as file:
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
 
-        # Confirm file download
         if not os.path.exists(zip_filename):
             client.send_message(message.chat.id, "خطا: فایل ZIP دانلود نشد.")
             return
         
         client.send_message(message.chat.id, "فایل ZIP با موفقیت دانلود شد. در حال استخراج فایل‌ها...")
 
-        # Create the extraction folder if it doesn't exist
         os.makedirs(extract_folder, exist_ok=True)
 
-        # Unzip the downloaded file
         with zipfile.ZipFile(zip_filename, "r") as zip_ref:
             zip_ref.extractall(extract_folder)
 
-        # Send each extracted file to the user
         files_sent = 0
         for root, _, files in os.walk(extract_folder):
             for file in files:
@@ -82,7 +74,6 @@ def download_and_unzip(client, message):
         else:
             client.send_message(message.chat.id, f"مجموعاً {files_sent} فایل ارسال شد.")
 
-        # Cleanup: Remove the zip file and extracted files
         os.remove(zip_filename)
         shutil.rmtree(extract_folder)
 
@@ -92,7 +83,7 @@ def download_and_unzip(client, message):
         client.send_message(message.chat.id, "فایل ZIP معتبر نیست.")
     except Exception as e:
         client.send_message(message.chat.id, f"خطا: {e}")
-        
+
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
     exclude_files = {
