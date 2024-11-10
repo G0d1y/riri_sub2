@@ -8,7 +8,7 @@ from pyrogram import Client, filters
 from downloader import download_file , download_document , cancel_event
 from ffmpeg import process_videos , shift_subtitles , add_soft_subtitle , trim_video , get_aac_profile , low_qulity
 from urllib.parse import urlparse
-
+import requests
 with open('config.json') as config_file:
     config = json.load(config_file)
 
@@ -29,6 +29,32 @@ admins = [5429433533 , 6459990242]
 user_state = {}
 
 ongoing_downloads = {}
+
+@app.on_message(filters.command("ost"))
+def download_ost(client, message):
+    if len(message.command) < 2:
+        client.send_message(message.chat.id, "لطفاً لینک فایل را وارد کنید.")
+        return
+
+    url = message.command[1]
+    filename = url.split("/")[-1]
+
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        with open(filename, "wb") as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                file.write(chunk)
+
+        client.send_document(message.chat.id, filename)
+
+        os.remove(filename)
+
+    except requests.exceptions.RequestException as e:
+        client.send_message(message.chat.id, f"خطا در دانلود فایل: {e}")
+    except Exception as e:
+        client.send_message(message.chat.id, f"خطا: {e}")
 
 @app.on_message(filters.command("clear"))
 def remove_files(client , message):
