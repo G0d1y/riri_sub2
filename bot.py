@@ -220,10 +220,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         final_output_path = f'{output_name}.mkv'
         add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
 
-        processing_end_time = time.time()
-        processing_time = processing_end_time - processing_start_time
-        client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
-
         trimmed_output_path = 'trimmed.mkv'
         trim_video(final_output_path, trimmed_output_path, duration=90)
         trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
@@ -236,6 +232,10 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
         client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
 
+        processing_end_time = time.time()
+        processing_time = processing_end_time - processing_start_time
+        client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
+        
         final = client.send_document("-1002332192205", final_output_path, thumb="cover.jpg")
         final_url = f"https://t.me/c/2332192205/{final.id}"
         client.send_message(chat_id, "final: \n" + final_url)
