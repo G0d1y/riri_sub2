@@ -9,6 +9,7 @@ cpu_cores = os.cpu_count()
 print(f"Available CPU cores: {cpu_cores}")
 
 def create_ts_file(input_video, output_file):
+    processing_start_time = time.time()
     if os.path.exists(input_video):
         try:
             cmd = [
@@ -16,6 +17,8 @@ def create_ts_file(input_video, output_file):
                 '-f', 'mpegts', '-threads', str(cpu_cores), output_file
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            processing_time = time.time() - processing_start_time
+            print(f"create_ts_file: {processing_time:.2f} s")
             if result.returncode != 0:
                 print(f"Failed to create {output_file}: {result.stderr.decode()}")
         except Exception as e:
@@ -39,6 +42,7 @@ def change_fps(input_file, output_file, new_fps):
     
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
+    processing_start_time = time.time()
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
         try:
             with open('concat_list.txt', 'w') as f:
@@ -50,6 +54,9 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
                 '-c', 'copy', '-threads', str(cpu_cores), final_output
             ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            processing_time = time.time() - processing_start_time
+            print(f"concat_videos: {processing_time:.2f} s")
+
             if result.returncode != 0:
                 print(f"Failed to concatenate videos: {result.stderr.decode()}")
         except Exception as e:
