@@ -121,7 +121,7 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     shifted_subtitle_file = subtitle_file.replace('.srt', '_shifted.srt')
     subs.save(shifted_subtitle_file, encoding='utf-8')
     processing_time = time.time() - processing_start_time
-    print(processing_time)
+    print("shift_subtitles: " + processing_time)
     return shifted_subtitle_file
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
