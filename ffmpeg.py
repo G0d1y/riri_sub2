@@ -66,23 +66,9 @@ def concat_videos(trailer_ts, downloaded_ts, final_output):
 def process_videos(downloaded_video, trailer_video, final_output):
     trailer_ts = 'trailer.ts'
     downloaded_ts = 'downloaded.ts'
-    fps = get_video_fps(downloaded_video)
-    fps2 = get_video_fps(trailer_video)
-    if fps == fps2:
-        create_ts_file(trailer_video, trailer_ts)
-        create_ts_file(downloaded_video, downloaded_ts)
-        concat_videos(trailer_ts, downloaded_ts, final_output)
-    else:
-        path2 = 'trailer.mkv'
-        if os.path.exists(path2):
-            os.remove(path2)
-        print("Wrong FPS :" + f"{fps} =============>>>>>>>>>>>>> {fps2}")
-        change_fps(trailer_video , path2 , fps)
-        create_ts_file(path2, trailer_ts)
-        create_ts_file(downloaded_video, downloaded_ts)
-        concat_videos(trailer_ts, downloaded_ts, final_output)
-        os.remove(path2)
-
+    create_ts_file(trailer_video, trailer_ts)
+    create_ts_file(downloaded_video, downloaded_ts)
+    concat_videos(trailer_ts, downloaded_ts, final_output)
     try:
         os.remove(trailer_ts)
         os.remove(downloaded_ts)
@@ -179,33 +165,33 @@ def get_aac_profile(video_file):
             if codec == "x264":
                 channel_layout = get_audio_channel_layout(video_file)
                 if channel_layout in ["stereo", "mono"]:
-                    return "x264_LC.mkv"
+                    return "x264_LC"
                 else:
-                    return "x264_LC_5.1.mkv"
+                    return "x264_LC_5.1"
             elif codec == "x265":
                 channel_layout = get_audio_channel_layout(video_file)
                 if channel_layout in ["stereo", "mono"]:
-                    return "x265_LC.mkv"
+                    return "x265_LC"
                 else:
-                    return "x265_LC_5.1.mkv"
+                    return "x265_LC_5.1"
         elif 'he' in profile:
             if codec == "x264":
                 channel_layout = get_audio_channel_layout(video_file)
                 if channel_layout in ["stereo", "mono"]:
-                    return "x264_HE.mkv"
+                    return "x264_HE"
                 else:
-                    return "x264_HE_5.1.mkv"   
+                    return "x264_HE_5.1"   
                 
                                  
             elif codec == "x265":
                 channel_layout = get_audio_channel_layout(video_file)
                 if channel_layout in ["stereo", "mono"]:
-                    return "x265_HE.mkv"
+                    return "x265_HE"
                 else:
-                    return "x265_HE_5.1.mkv"
+                    return "x265_HE_5.1"
                 
         else:
-            return "x264_LC.mkv"
+            return "x264_LC"
 
     except Exception as e:
         print("Error:", e)
