@@ -88,7 +88,9 @@ def download_and_unzip(client, message):
 def remove_files(client , message):
     exclude_files = {
     'x264_HE.mkv' , 'x264_LC.mkv' , 'x265_HE.mkv' , 'x265_LC.mkv' ,
-    'x264_HE_5.1.mkv' , 'x264_LC_5.1.mkv' , 'x265_HE_5.1.mkv' , 'x265_LC_5.1.mkv'
+    'x264_HE_5.1.mkv' , 'x264_LC_5.1.mkv' , 'x265_HE_5.1.mkv' , 'x265_LC_5.1.mkv',
+    'x264_HE_25.mkv' , 'x264_LC_25.mkv' , 'x265_HE_25.mkv' , 'x265_LC_25.mkv' ,
+    'x264_HE_5.1_25.mkv' , 'x264_LC_5.1_25.mkv' , 'x265_HE_5.1_25.mkv' , 'x265_LC_5.1_25.mkv'
     }
 
     directory = os.getcwd()
