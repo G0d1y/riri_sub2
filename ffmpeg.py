@@ -4,7 +4,6 @@ import json
 from pysrt import SubRipTime, SubRipItem
 import pysrt
 import time
-# Print the number of available CPU cores
 cpu_cores = os.cpu_count()
 print(f"Available CPU cores: {cpu_cores}")
 
