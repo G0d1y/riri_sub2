@@ -35,7 +35,8 @@ def change_fps(input_file, output_file, new_fps):
     ]
     subprocess.run(command)
     processing_time = time.time() - processing_start_time
-    print("change_fps: " + processing_time)
+    print(f"change_fps: {processing_time:.2f} s")
+    
 
 def concat_videos(trailer_ts, downloaded_ts, final_output):
     if os.path.exists(downloaded_ts) and os.path.exists(trailer_ts):
@@ -70,7 +71,7 @@ def process_videos(downloaded_video, trailer_video, final_output):
         if os.path.exists(path2):
             os.remove(path2)
         print("Wrong FPS :" + f"{fps} =============>>>>>>>>>>>>> {fps2}")
-        change_fps(trailer_video , path2 ,  fps)
+        change_fps(trailer_video , path2 , fps)
         create_ts_file(path2, trailer_ts)
         create_ts_file(downloaded_video, downloaded_ts)
         concat_videos(trailer_ts, downloaded_ts, final_output)
@@ -112,7 +113,6 @@ def seconds_to_subrip_time(seconds):
 
 def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
     print("~~~~~~~~ SHIFTING SOFTSUB ~~~~~~~~")
-    processing_start_time = time.time()
     subs = pysrt.open(subtitle_file)
     delay = SubRipTime(seconds=delay_seconds, milliseconds=delay_milliseconds)
     for sub in subs:
@@ -120,8 +120,6 @@ def shift_subtitles(subtitle_file, delay_seconds, delay_milliseconds=0):
         sub.end = sub.end + delay
     shifted_subtitle_file = subtitle_file.replace('.srt', '_shifted.srt')
     subs.save(shifted_subtitle_file, encoding='utf-8')
-    processing_time = time.time() - processing_start_time
-    print("shift_subtitles: " + processing_time)
     return shifted_subtitle_file
 
 def add_soft_subtitle(video_file, subtitle_file, output_file):
@@ -133,7 +131,7 @@ def add_soft_subtitle(video_file, subtitle_file, output_file):
         '-disposition:s:0', 'default' , '-threads', str(cpu_cores), output_file
     ])
     processing_time = time.time() - processing_start_time
-    print(processing_time)
+    print(f"add_soft_subtitle: {processing_time:.2f} s")
 
 def low_qulity(input_path, output_path):
     resolution = "256:144"
