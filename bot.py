@@ -175,6 +175,8 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     os.remove(shifted_subtitle_file)
     os.remove(final_output_path)
     os.remove(full_output)
+    if os.path.exists("trailer.mkv"):
+        os.remove("trailer.mkv")
 
 @app.on_message(filters.document)
 async def handle_document(client, message):
@@ -281,25 +283,57 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         shifted_subtitle_file = shift_subtitles(output_name + '_subtitle.srt', delay_seconds=15, delay_milliseconds=40)
     
         aac_profile = get_aac_profile(downloaded)
-        if aac_profile == "x264_HE.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x264 تشخیص داده شد!"+ "\n" + "چنل صدا ‌Stereo تشخیص داده شد!")
-        if aac_profile == "x264_LC.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد" + "\n" + "کدک ویدی x264 تشخیص داده شد!"+ "\n" + "چنل صدا ‌Stereo تشخیص داده شد!")
-        if aac_profile == "x265_HE.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x265 تشخیص داده شد!"+ "\n" + "چنل صدا ‌Stereo تشخیص داده شد!")
-        if aac_profile == "x265_LC.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد" + "\n" + "کدک ویدی x265 تشخیص داده شد!"+ "\n" + "چنل صدا ‌Stereo تشخیص داده شد!")
-        if aac_profile == "x264_HE_5.1.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x264 تشخیص داده شد!"+ "\n" + "چنل صدا 5.1 تشخیص داده شد!")
-        if aac_profile == "x264_LC_5.1.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد" + "\n" + "کدک ویدی x264 تشخیص داده شد!"+ "\n" + "چنل صدا 5.1 تشخیص داده شد!")
-        if aac_profile == "x265_HE_5.1.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (HE) تشخیص داده شد"+ "\n" + "کدک ویدی x265 تشخیص داده شد!"+ "\n" + "چنل صدا 5.1 تشخیص داده شد!")
-        if aac_profile == "x265_LC_5.1.mkv":
-            client.send_message(chat_id, f"نوع فرمت صدای ویدیو AAC (LC) تشخیص داده شد" + "\n" + "کدک ویدی x265 تشخیص داده شد!" + "\n" + "چنل صدا 5.1 تشخیص داده شد!")
+        format = ''
+        channel = ''
+        codec = ''
+        if aac_profile == "x264_HE":
+            format = "AAC (HE)"
+            channel = "‌Stereo"
+            codec = "x264"
+        if aac_profile == "x264_LC":
+            format = "AAC (LC)"
+            channel = "‌Stereo"
+            codec = "x264"
+        if aac_profile == "x265_HE":
+            format = "AAC (HE)"
+            channel = "‌Stereo"
+            codec = "x265"
+        if aac_profile == "x265_LC":
+            format = "AAC (LC)"
+            channel = "‌Stereo"
+            codec = "x265"
+        if aac_profile == "x264_HE_5.1":
+            format = "AAC (HE)"
+            channel = "5.1"
+            codec = "x264"
+        if aac_profile == "x264_LC_5.1":
+            format = "AAC (LC)"
+            channel = "5.1"
+            codec = "x264"
+        if aac_profile == "x265_HE_5.1":
+            format = "AAC (HE)"
+            channel = "5.1"
+            codec = "x265"
+        if aac_profile == "x265_LC_5.1":
+            format = "AAC (LC)"
+            channel = "5.1"
+            codec = "x265"
 
-        process_videos(downloaded, aac_profile, full_output)
-
+        fps = str(get_video_fps(downloaded))[:2]
+        fps = int(fps)
+        if fps == 30:
+            aac_profile += '.mkv'
+            client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"fps: {fps} ")
+            process_videos(downloaded, aac_profile, full_output)
+        elif fps == 25: 
+            aac_profile += '_25.mkv'
+            client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"fps: {fps} ")
+            process_videos(downloaded, aac_profile, full_output)
+        else:
+            aac_profile += '.mkv'
+            client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"FPS ناشناخته تشخیص داده شد! \n FPS: {fps}")
+            change_fps(aac_profile , "trailer.mkv" , fps)
+            process_videos(downloaded, aac_profile, full_output)
 
         final_output_path = f'{output_name}.mkv'
         add_soft_subtitle(full_output, shifted_subtitle_file, final_output_path)
@@ -318,6 +352,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         os.remove(shifted_subtitle_file)
         os.remove(final_output_path)
         os.remove(full_output)
+        if os.path.exists("trailer.mkv"):
+            os.remove("trailer.mkv")
     else:
         cancel_event.clear()
         return None
