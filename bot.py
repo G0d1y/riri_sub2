@@ -219,6 +219,9 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
         trimmed_low = client.send_document("-1002310252740", trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
         trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
         await client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
+        
+        os.remove(trimmed_output_path)
+        os.remove(trimmed_low_output_path)
 
     await client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     await client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
@@ -228,8 +231,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     os.remove(shifted_subtitle_file)
     os.remove(final_output_path)
     os.remove(full_output)
-    os.remove(trimmed_output_path)
-    os.remove(trimmed_low_output_path)
+
     if os.path.exists("trailer.mkv"):
         os.remove("trailer.mkv")
 
@@ -413,6 +415,9 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
             trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
             client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
 
+            os.remove(trimmed_output_path)
+            os.remove(trimmed_low_output_path)
+
         final = client.send_document("-1002332192205", final_output_path, thumb="cover.jpg")
         final_url = f"https://t.me/c/2332192205/{final.id}"
         client.send_message(chat_id, "final: \n" + final_url)
@@ -423,8 +428,6 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         os.remove(shifted_subtitle_file)
         os.remove(final_output_path)
         os.remove(full_output)
-        os.remove(trimmed_output_path)
-        os.remove(trimmed_low_output_path)
         if os.path.exists("trailer.mkv"):
             os.remove("trailer.mkv")
     else:
