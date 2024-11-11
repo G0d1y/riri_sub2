@@ -61,6 +61,7 @@ def toggle_test(client, message):
         json.dump(config, config_file, indent=4)
 
     new_value = "enabled" if config['test'] else "disabled"
+    print(config['test'])
     client.send_message(message.chat.id, f"Test mode has been {new_value}.")
 
 @app.on_message(filters.command("restart"))
