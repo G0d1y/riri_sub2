@@ -402,7 +402,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         processing_time = processing_end_time - processing_start_time
         client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
         test_status = "enabled" if config['test'] else "disabled"
-
+        print(test_status)
         if test_status == "enabled":
             trimmed_output_path = 'trimmed.mkv'
             trim_video(final_output_path, trimmed_output_path, duration=90)
