@@ -61,7 +61,6 @@ def toggle_test(client, message):
         json.dump(config, config_file, indent=4)
 
     new_value = "enabled" if config['test'] else "disabled"
-    print(config['test'])
     client.send_message(message.chat.id, f"Test mode has been {new_value}.")
 
 @app.on_message(filters.command("restart"))
@@ -208,8 +207,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     processing_time = time.time() - processing_start_time
     await client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
 
-    test_status = "enabled" if config['test'] else "disabled"
-    if test_status == "enabled":
+    if config['test']  == True:
         trimmed_output_path = 'trimmed.mkv'
         trim_video(final_output_path, trimmed_output_path, duration=90)
         trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
@@ -237,7 +235,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
 
 @app.on_message(filters.document)
 async def handle_document(client, message):
-    if message.chat.id == "-1002332192205":
+    if message.chat.id == "-1002332192205" or message.chat.id == "-1002310252740":
         return
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
@@ -265,12 +263,11 @@ async def handle_output_name(client, message):
 
     bot_info = await client.get_me()
     bot_id = bot_info.id
-    if message.chat.id == "-1002332192205":
+    if message.chat.id == "-1002332192205" or message.chat.id == "-1002310252740":
         return
     if message.from_user.id == bot_id:
         return
 
-    print("test")
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
@@ -326,6 +323,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     output_path = output_name + '.mkv'
     full_output =  f'full_{output_path}'
+    client.send_message(chat_id, "Test: " + config['test'])
     message = client.send_message(chat_id, f"در حال پردازش: {output_path}...")
     message_id = message.id
 
@@ -402,9 +400,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         processing_end_time = time.time()
         processing_time = processing_end_time - processing_start_time
         client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
-        test_status = "enabled" if config['test'] else "disabled"
-        print(test_status)
-        if test_status == "enabled":
+        if config['test']  == True:
             trimmed_output_path = 'trimmed.mkv'
             trim_video(final_output_path, trimmed_output_path, duration=90)
             trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
