@@ -19,7 +19,6 @@ with open('config.json') as config_file:
 api_id = int(config['api_id'])
 api_hash = config['api_hash']
 bot_token = config['bot_token']
-
 app = Client(
     "bot",
     api_id=api_id,
@@ -205,6 +204,8 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
 
 @app.on_message(filters.document)
 async def handle_document(client, message):
+    if message.chat.id == "-1002332192205":
+        return
     if message.chat.id not in admins:
         await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
@@ -228,9 +229,11 @@ async def handle_document(client, message):
     
 @app.on_message(filters.text)
 async def handle_output_name(client, message):
+
     bot_info = await client.get_me()
     bot_id = bot_info.id
-
+    if message.chat.id == "-1002332192205":
+        return
     if message.from_user.id == bot_id:
         return
 
