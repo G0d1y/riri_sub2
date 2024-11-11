@@ -19,6 +19,8 @@ with open('config.json') as config_file:
 api_id = int(config['api_id'])
 api_hash = config['api_hash']
 bot_token = config['bot_token']
+test = config['test']
+
 app = Client(
     "bot",
     api_id=api_id,
@@ -47,6 +49,19 @@ def find_and_kill_bot():
 def start_bot():
     subprocess.Popen(["nohup", "python3", "bot.py", "&"])
     print("Bot restarted.")
+
+@app.on_message(filters.command("test"))
+def toggle_test(client, message):
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+
+    config['test'] = not config['test']
+
+    with open('config.json', 'w') as config_file:
+        json.dump(config, config_file, indent=4)
+
+    new_value = "enabled" if config['test'] else "disabled"
+    client.send_message(message.chat.id, f"Test mode has been {new_value}.")
 
 @app.on_message(filters.command("restart"))
 def restart(client, message):
@@ -191,6 +206,21 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     
     processing_time = time.time() - processing_start_time
     await client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
+
+    test_status = "enabled" if config['test'] else "disabled"
+    if test_status == "enabled":
+        trimmed_output_path = 'trimmed.mkv'
+        trim_video(final_output_path, trimmed_output_path, duration=90)
+        trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
+        trimmed_url = f"https://t.me/c/2310252740/{trimmed.id}"            
+        await client.send_message(chat_id, "trimmed: \n" + trimmed_url)
+            
+        trimmed_low_output_path = 'trimmed_low_quality.mkv'
+        low_qulity(trimmed_output_path, trimmed_low_output_path)
+        trimmed_low = client.send_document("-1002310252740", trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
+        trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
+        await client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
+
     await client.send_document(chat_id, final_output_path, thumb="cover.jpg")
     await client.send_message(chat_id, f"پردازش {output_name} کامل شد!")
 
@@ -199,6 +229,8 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
     os.remove(shifted_subtitle_file)
     os.remove(final_output_path)
     os.remove(full_output)
+    os.remove(trimmed_output_path)
+    os.remove(trimmed_low_output_path)
     if os.path.exists("trailer.mkv"):
         os.remove("trailer.mkv")
 
@@ -369,6 +401,20 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         processing_end_time = time.time()
         processing_time = processing_end_time - processing_start_time
         client.send_message(chat_id, f"زمان پردازش: {processing_time:.2f} ثانیه")
+        test_status = "enabled" if config['test'] else "disabled"
+
+        if test_status == "enabled":
+            trimmed_output_path = 'trimmed.mkv'
+            trim_video(final_output_path, trimmed_output_path, duration=90)
+            trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
+            trimmed_url = f"https://t.me/c/2310252740/{trimmed.id}"            
+            client.send_message(chat_id, "trimmed: \n" + trimmed_url)
+            
+            trimmed_low_output_path = 'trimmed_low_quality.mkv'
+            low_qulity(trimmed_output_path, trimmed_low_output_path)
+            trimmed_low = client.send_document("-1002310252740", trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
+            trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
+            client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
 
         final = client.send_document("-1002332192205", final_output_path, thumb="cover.jpg")
         final_url = f"https://t.me/c/2332192205/{final.id}"
@@ -380,6 +426,8 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         os.remove(shifted_subtitle_file)
         os.remove(final_output_path)
         os.remove(full_output)
+        os.remove(trimmed_output_path)
+        os.remove(trimmed_low_output_path)
         if os.path.exists("trailer.mkv"):
             os.remove("trailer.mkv")
     else:
