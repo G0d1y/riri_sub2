@@ -219,7 +219,7 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
         trimmed_low = client.send_document("-1002310252740", trimmed_low_output_path, caption= output_name, thumb="cover.jpg")
         trimmed_low_url = f"https://t.me/c/2310252740/{trimmed_low.id}"
         await client.send_message(chat_id, "trimmed_low_quality: \n" + trimmed_low_url)
-        
+
         os.remove(trimmed_output_path)
         os.remove(trimmed_low_output_path)
 
@@ -325,7 +325,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
 
     output_path = output_name + '.mkv'
     full_output =  f'full_{output_path}'
-    client.send_message(chat_id, "Test: " + config['test'])
+    client.send_message(chat_id, "Test: " + str(config['test']))
     message = client.send_message(chat_id, f"در حال پردازش: {output_path}...")
     message_id = message.id
 
