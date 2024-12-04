@@ -127,7 +127,9 @@ def remove_files(client , message):
     'x264_HE.mkv' , 'x264_LC.mkv' , 'x265_HE.mkv' , 'x265_LC.mkv' ,
     'x264_HE_5.1.mkv' , 'x264_LC_5.1.mkv' , 'x265_HE_5.1.mkv' , 'x265_LC_5.1.mkv',
     'x264_HE_25.mkv' , 'x264_LC_25.mkv' , 'x265_HE_25.mkv' , 'x265_LC_25.mkv' ,
-    'x264_HE_5.1_25.mkv' , 'x264_LC_5.1_25.mkv' , 'x265_HE_5.1_25.mkv' , 'x265_LC_5.1_25.mkv'
+    'x264_HE_5.1_25.mkv' , 'x264_LC_5.1_25.mkv' , 'x265_HE_5.1_25.mkv' , 'x265_LC_5.1_25.mkv',
+    'x264_HE_23.mkv' , 'x264_LC_23.mkv' , 'x265_HE_23.mkv' , 'x265_LC_23.mkv' ,
+    'x264_HE_5.1_23.mkv' , 'x264_LC_5.1_23.mkv' , 'x265_HE_5.1_23.mkv' , 'x265_LC_5.1_23.mkv'
     }
 
     directory = os.getcwd()
@@ -195,6 +197,10 @@ async def process_video_with_files(video_file, subtitle_file, output_name, clien
         aac_profile += '_25.mkv'
         await client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"fps: {fps} ")
         process_videos(video_file, aac_profile, full_output)
+    elif fps == 23:
+        aac_profile += '_23.mkv'
+        await client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"fps: {fps} ")
+        process_videos(video_file, aac_profile, full_output)
     else:
         aac_profile += '.mkv'
         await client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"FPS ناشناخته تشخیص داده شد! \n FPS: {fps}")
@@ -242,12 +248,12 @@ async def handle_document(client, message):
     if message.chat.id == "-1002332192205" or message.chat.id == "-1002310252740":
         return
     if message.chat.id not in admins:
-        await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
 
     document = message.document
     if document.mime_type in ["video/x-matroska", "video/mp4"]:
-        video_file = await download_document(client, document, "video.mkv" , message.chat.id)
+        message_ = await client.send_message(message.chat.id, "درحال دانلود...")
+        video_file = await download_document(client, document, "video.mkv" , message.chat.id , message_.id)
         await client.send_message(message.chat.id, "لطفاً فایل زیرنویس با فرمت SRT را ارسال کنید.")
 
         user_state[message.chat.id] = {"video_file": video_file, "step": "waiting_for_subtitle"}
@@ -273,7 +279,6 @@ async def handle_output_name(client, message):
         return
 
     if message.chat.id not in admins:
-        await client.send_message(message.chat.id, "شما دسترسی لازم را ندارید.")
         return
     if message.chat.id in user_state and user_state[message.chat.id]["step"] == "waiting_for_output_name":
         output_name = message.text.strip()
@@ -322,7 +327,6 @@ def get_extension_from_url(url):
 
 def process_video_with_links(video_link, subtitle_link, client, chat_id, output_name):
     if chat_id not in admins:
-        client.send_message(chat_id, "شما دسترسی لازم را ندارید.")
         return
 
     output_path = output_name + '.mkv'
@@ -392,6 +396,10 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
             aac_profile += '_25.mkv'
             client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"fps: {fps} ")
             process_videos(downloaded, aac_profile, full_output)
+        elif fps == 23:
+            aac_profile += '_23.mkv'
+            client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"fps: {fps} ")
+            process_videos(downloaded, aac_profile, full_output)
         else:
             aac_profile += '.mkv'
             client.send_message(chat_id, f"نوع فرمت صدای ویدیو {format} تشخیص داده شد"+ "\n" + f"کدک ویدی {codec} تشخیص داده شد!"+ "\n" + f"چنل صدا {channel} تشخیص داده شد!" + "\n" + f"FPS ناشناخته تشخیص داده شد! \n FPS: {fps}")
@@ -404,7 +412,7 @@ def process_video_with_links(video_link, subtitle_link, client, chat_id, output_
         
         if config['test']  == True:
             trimmed_output_path = 'trimmed.mkv'
-            trim_video(final_output_path, trimmed_output_path, duration=90)
+            trim_video(final_output_path, trimmed_output_path, duration=150)
             trimmed = client.send_document("-1002310252740", trimmed_output_path, caption= output_name, thumb="cover.jpg")
             trimmed_url = f"https://t.me/c/2310252740/{trimmed.id}"            
             client.send_message(chat_id, "trimmed: \n" + trimmed_url)

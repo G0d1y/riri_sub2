@@ -10,14 +10,14 @@ DOWNLOAD_DIRECTORY = "./"
 cancel_event = asyncio.Event()
 
 async def download_document(client, document, file_name, chat_id, message_id):
-    file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name) 
-    
+    file_path = os.path.join(DOWNLOAD_DIRECTORY, file_name)
     total_size = int(document.file_size) if document.file_size else 0
     downloaded = 0
     start_time = time.time()
+    last_update_time = 0  
 
     async def progress(current, total):
-        nonlocal downloaded
+        nonlocal downloaded, last_update_time
         downloaded = current
         current_time = time.time()
         elapsed_time = current_time - start_time
@@ -29,7 +29,9 @@ async def download_document(client, document, file_name, chat_id, message_id):
             speed = 0
             remaining_time = float('inf')
 
-        if int(current / (total / 100)) % 3 == 0:
+        
+        if current_time - last_update_time >= 2:
+            last_update_time = current_time
             message_content = (
                 f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total / (1024 * 1024):.2f} MB\n"
                 f"سرعت: {speed:.2f} MB/s\n"
@@ -40,7 +42,8 @@ async def download_document(client, document, file_name, chat_id, message_id):
                 message_id,
                 message_content,
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]]),
-            )    
+            )
+
     try:
         await client.download_media(document, file_path, progress=progress)
         return file_path
@@ -54,23 +57,23 @@ async def download_file(client, url, filename, chat_id, message_id):
     downloaded = 0
     start_time = time.time()
 
-    # Get the filename from the URL if not provided
     if not filename:
-        filename = os.path.basename(url)  # Use the last part of the URL as filename
+        filename = os.path.basename(url)
 
     with open(filename, 'wb') as f:
         last_update_time = time.time()
         previous_message = ""
         
+        
+        low_speed_start_time = None
+        is_speed_low = False
+        
         for data in response.iter_content(chunk_size=1024):
-            if cancel_event.is_set():
-                print("Download cancelled.")
-                return None
-            
             f.write(data)
             downloaded += len(data)
             current_time = time.time()
             elapsed_time = current_time - start_time
+            
             
             if elapsed_time > 0:
                 speed = (downloaded / (1024 * 1024)) / elapsed_time
@@ -79,6 +82,29 @@ async def download_file(client, url, filename, chat_id, message_id):
                 speed = 0
                 remaining_time = float('inf')
             
+            
+            if speed < 1:
+                if not low_speed_start_time:
+                    low_speed_start_time = current_time  
+                elif current_time - low_speed_start_time >= 10:
+                    if not is_speed_low:
+                        
+                        await client.edit_message_text(
+                            chat_id,
+                            message_id,
+                            "⏸️ سرعت دانلود پایین است! دانلود ادامه خواهد داشت! 🔄",
+                            reply_markup=InlineKeyboardMarkup([
+                                [InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]
+                            ])
+                        )
+                        is_speed_low = True  
+                    
+                    return await download_file(client, url, filename, chat_id, message_id)
+
+            else:
+                low_speed_start_time = None  
+            
+            
             if current_time - last_update_time >= 1:
                 message_content = (
                     f"دانلود: {downloaded / (1024 * 1024):.2f} MB از {total_size / (1024 * 1024):.2f} MB\n"
@@ -86,40 +112,53 @@ async def download_file(client, url, filename, chat_id, message_id):
                     f"زمان باقی‌مانده: {remaining_time:.2f} ثانیه"
                 )
                 
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]
+                ])
+
                 if message_content != previous_message:
                     await client.edit_message_text(
                         chat_id,
                         message_id,
                         message_content,
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("لغو", callback_data=f"cancel:{message_id}")]]),
+                        reply_markup=keyboard
                     )
                     previous_message = message_content
                 last_update_time = current_time
-    
+
     print("Download completed.")
 
-    # Check if the downloaded file is a zip file and extract it
+    
     if filename.endswith('.zip'):
         extracted_srt_file = None
         with zipfile.ZipFile(filename, 'r') as zip_ref:
             zip_ref.extractall(DOWNLOAD_DIRECTORY)
-            # Get the list of extracted files
+
             extracted_files = zip_ref.namelist()
-            # Find the first SRT file
+
             for file in extracted_files:
                 if file.endswith('.srt'):
                     extracted_srt_file = os.path.join(DOWNLOAD_DIRECTORY, file)
                     print(f"Extracted: {extracted_srt_file}")
                     break
-        
-        # Clean up the ZIP file after extraction
-        os.remove(filename)  # Remove the ZIP file
-        
-        # Rename the extracted SRT file
-        if extracted_srt_file:
-            # Construct new SRT filename based on the original ZIP filename
-            new_srt_name = os.path.splitext(filename)[0] + '.srt'  # Replace .zip with .srt
-            os.rename(extracted_srt_file, new_srt_name)  # Rename the file
-            return new_srt_name  # Return the new SRT file path
 
-    return filename  # Return the original filename if no SRT file is found
+        os.remove(filename)
+
+        if extracted_srt_file:
+            new_srt_name = os.path.splitext(filename)[0] + '.srt'
+            os.rename(extracted_srt_file, new_srt_name)
+            return new_srt_name
+
+    return filename
+
+async def handle_redownload(client, chat_id, message_id, url, filename):
+    print(f"Redownload button pressed for message: {message_id}")
+    
+    await client.edit_message_text(
+        chat_id,
+        message_id,
+        "دانلود دوباره شروع شد... ⏳",
+        reply_markup=None
+    )
+    
+    await download_file(client, url, filename, chat_id, message_id)
